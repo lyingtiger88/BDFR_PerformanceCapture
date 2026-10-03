@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BDFRPC_BUILD_TOOLS "Build diagnostic tools" ON)
 option(BDFRPC_BUILD_TESTS "Build tests" ON)
+option(BDFRPC_ENABLE_OPENCV "Enable live UVC/OpenCV camera capture" OFF)
 
 add_library(bdfrpc_core
     src/CaptureManager.cpp
@@ -22,6 +23,19 @@ if(MSVC)
     target_compile_options(bdfrpc_core PRIVATE /W4 /permissive-)
 else()
     target_compile_options(bdfrpc_core PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(BDFRPC_ENABLE_OPENCV)
+    find_package(OpenCV REQUIRED COMPONENTS core videoio imgproc)
+    add_library(bdfrpc_opencv src/OpenCVCameraSource.cpp)
+    target_include_directories(bdfrpc_opencv PUBLIC include)
+    target_link_libraries(bdfrpc_opencv PUBLIC bdfrpc_core ${OpenCV_LIBS})
+    target_compile_definitions(bdfrpc_opencv PUBLIC BDFRPC_HAS_OPENCV=1)
+
+    if(BDFRPC_BUILD_TOOLS)
+        add_executable(bdfrpc_camera_probe tools/bdfrpc_camera_probe.cpp)
+        target_link_libraries(bdfrpc_camera_probe PRIVATE bdfrpc_opencv)
+    endif()
 endif()
 
 if(BDFRPC_BUILD_TOOLS)
