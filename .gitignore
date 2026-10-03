@@ -1,0 +1,14 @@
+build/
+out/
+.vs/
+.idea/
+.vscode/
+CMakeUserPresets.json
+*.user
+*.suo
+*.pdb
+*.obj
+*.ilk
+*.exe
+__pycache__/
+*.pyc
