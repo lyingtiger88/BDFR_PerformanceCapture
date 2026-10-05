@@ -59,11 +59,11 @@
 - [ ] Blender/Maya export bridge
 
 ## M5 — Studio UI
-- [ ] camera grid
-- [x] source health model (UI binding still pending)
-- [ ] sync status
+- [x] live camera grid with previews
+- [x] source health model and Studio status binding
+- [x] live sync/skew/drop status
 - [ ] calibration wizard
-- [ ] source routing panel
+- [x] Face Only / Body Only / Hybrid mode control and live bridge status
 - [ ] 3D viewer
 - [ ] record/playback/session browser
 

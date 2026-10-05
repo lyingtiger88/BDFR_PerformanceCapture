@@ -41,6 +41,27 @@ isolated so each upstream project retains its own dependency and license boundar
 - native TCP receiver compatible with EasyMocap `BaseSocketClient.send_smpl()`
 - Windows/Linux CI plus OpenCV backend compile-check
 
+## BDFR Performance Studio
+
+An optional Qt6 desktop Studio is now included. It uses the real capture and
+fusion core rather than mock controls:
+
+- camera discovery and rescanning
+- live multi-camera preview grid
+- start/stop of asynchronous camera capture
+- live FPS, queue-drop and sync-skew telemetry
+- Face Only / Body Only / Hybrid mode switching
+- BDFR FacialAnimation UDP bridge controls
+- EasyMocap TCP bridge controls
+- live solver health and fused-domain/source status
+
+Build it with:
+
+```bash
+cmake -S . -B build-studio -DBDFRPC_ENABLE_OPENCV=ON -DBDFRPC_BUILD_STUDIO=ON
+cmake --build build-studio --config Release
+```
+
 ## Build
 
 ```bash
