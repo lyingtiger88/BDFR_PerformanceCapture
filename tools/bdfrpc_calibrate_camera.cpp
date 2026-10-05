@@ -8,7 +8,9 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -165,6 +167,21 @@ int main(int argc, char** argv) {
     }
 
     CalibrationProfile profile;
+    if (std::filesystem::exists(output)) {
+        std::ifstream existing_file(output, std::ios::binary);
+        std::stringstream buffer;
+        buffer << existing_file.rdbuf();
+        std::string parse_error;
+        const auto existing =
+            CalibrationProfile::deserialize(buffer.str(), &parse_error);
+        if (!existing) {
+            std::cerr << "Existing calibration profile is invalid: "
+                      << parse_error << "\n";
+            return 4;
+        }
+        profile = *existing;
+    }
+
     if (!profile.upsert(calibration)) {
         std::cerr << "Calibration result failed BDFR validation.\n";
         return 4;

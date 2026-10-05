@@ -62,6 +62,9 @@ if(BDFRPC_ENABLE_OPENCV)
 
         add_executable(bdfrpc_calibrate_camera tools/bdfrpc_calibrate_camera.cpp)
         target_link_libraries(bdfrpc_calibrate_camera PRIVATE bdfrpc_opencv)
+
+        add_executable(bdfrpc_calibrate_rig tools/bdfrpc_calibrate_rig.cpp)
+        target_link_libraries(bdfrpc_calibrate_rig PRIVATE bdfrpc_opencv)
     endif()
 endif()
 
