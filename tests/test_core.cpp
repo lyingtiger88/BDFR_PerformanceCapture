@@ -1,4 +1,5 @@
 #include "bdfrpc/AdapterProtocol.h"
+#include "bdfrpc/BDFRFacialUdpSource.h"
 #include "bdfrpc/Calibration.h"
 #include "bdfrpc/DeviceDiscovery.h"
 #include "bdfrpc/FusionCore.h"
@@ -7,13 +8,79 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <limits>
+#include <string>
+#include <vector>
 
 using namespace bdfrpc;
 
 static DomainSample sample(Domain domain, float confidence, float value) {
     return {domain, confidence, {value}};
+}
+
+static void append_u16(std::vector<std::uint8_t>& out, std::uint16_t value) {
+    out.push_back(static_cast<std::uint8_t>(value & 0xFFu));
+    out.push_back(static_cast<std::uint8_t>((value >> 8) & 0xFFu));
+}
+
+static void append_u32(std::vector<std::uint8_t>& out, std::uint32_t value) {
+    for (int i = 0; i < 4; ++i) {
+        out.push_back(static_cast<std::uint8_t>((value >> (i * 8)) & 0xFFu));
+    }
+}
+
+static void append_u64(std::vector<std::uint8_t>& out, std::uint64_t value) {
+    for (int i = 0; i < 8; ++i) {
+        out.push_back(static_cast<std::uint8_t>((value >> (i * 8)) & 0xFFu));
+    }
+}
+
+static void append_float(std::vector<std::uint8_t>& out, float value) {
+    std::uint32_t bits = 0;
+    std::memcpy(&bits, &value, sizeof(bits));
+    append_u32(out, bits);
+}
+
+static void append_double(std::vector<std::uint8_t>& out, double value) {
+    std::uint64_t bits = 0;
+    std::memcpy(&bits, &value, sizeof(bits));
+    append_u64(out, bits);
+}
+
+static void append_string(std::vector<std::uint8_t>& out, const std::string& value) {
+    append_u16(out, static_cast<std::uint16_t>(value.size()));
+    out.insert(out.end(), value.begin(), value.end());
+}
+
+static std::vector<std::uint8_t> make_facial_packet() {
+    std::vector<std::uint8_t> frame;
+    append_u32(frame, 0x52464442U);
+    append_u16(frame, 1);
+    append_u32(frame, 1);
+    append_double(frame, 1.25);
+    append_float(frame, 0.90F);
+    append_float(frame, 1.0F);
+    append_float(frame, 2.0F);
+    append_float(frame, 3.0F);
+    append_float(frame, 0.1F);
+    append_float(frame, 0.2F);
+    append_float(frame, 0.8F);
+    append_u32(frame, 2);
+    append_string(frame, "eyeBlinkLeft");
+    append_float(frame, 0.50F);
+    append_string(frame, "jawOpen");
+    append_float(frame, 0.40F);
+
+    std::vector<std::uint8_t> packet;
+    append_u32(packet, 0x50464442U);
+    append_u16(packet, 1);
+    append_u64(packet, 42);
+    append_string(packet, "phone");
+    append_u32(packet, static_cast<std::uint32_t>(frame.size()));
+    packet.insert(packet.end(), frame.begin(), frame.end());
+    return packet;
 }
 
 int main() {
@@ -173,6 +240,26 @@ int main() {
         assert(out.samples.size() == 5);
         assert(out.selected_sources[0] == "bdfr_facial");
         assert(out.selected_sources[2] == "easymocap");
+    }
+
+    {
+        CaptureFrame decoded;
+        std::uint64_t sequence = 0;
+        std::string remote;
+        assert(BDFRFacialPacketCodec::decode(
+            make_facial_packet(), "bdfr_facial", decoded, &sequence, &remote));
+        assert(sequence == 42);
+        assert(remote == "phone");
+        assert(decoded.source_id == "bdfr_facial");
+        assert(decoded.stream_id == "phone");
+        assert(decoded.timestamp_ns == 1'250'000'000);
+        assert(decoded.samples.size() == 2);
+        assert(decoded.samples[0].domain == Domain::Face);
+        assert(decoded.samples[0].channels.size() == 5);
+        assert(decoded.samples[0].channels[0] == "eyeBlinkLeft");
+        assert(decoded.samples[0].channels[1] == "jawOpen");
+        assert(decoded.samples[1].channels[0] == "pitch");
+        assert(decoded.samples[0].channels_valid());
     }
 
     std::cout << "bdfrpc_core_tests: OK\n";

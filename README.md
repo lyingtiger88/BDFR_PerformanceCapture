@@ -28,6 +28,8 @@ isolated so each upstream project retains its own dependency and license boundar
 - `SourceRouter` with priority, confidence threshold, timeout and automatic fallback
 - `FusionCore` for deterministic Face / Head / Body / Left Hand / Right Hand selection
 - BDFR FacialAnimation and EasyMocap buffered adapter foundations
+- protocol-compatible live UDP receiver for BDFR FacialAnimation packets
+- named semantic channels so FACS/ARKit/skeletal labels survive fusion
 - Face Only / Body Only / Hybrid routing policies
 - versioned EasyMocap JSON-lines worker bootstrap
 - Windows/Linux CI plus OpenCV backend compile-check

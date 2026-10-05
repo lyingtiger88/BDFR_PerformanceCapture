@@ -38,13 +38,14 @@
 - [x] Body Only routing policy
 - [x] Hybrid routing policy with Face/Head fallback
 - [x] versioned EasyMocap worker control bootstrap
-- [ ] FacialAnimation live UDP packet bridge
+- [x] FacialAnimation live UDP packet bridge
 - [ ] EasyMocap live solve execution
 - [ ] adapter health/watchdog/reconnect
 
 ## M4 — Fusion and retarget
 - [ ] clock-offset estimation at PerformanceCapture layer
 - [x] confidence-aware preferred/fallback source arbitration
+- [x] named semantic channels preserved through fusion
 - [ ] skeletal schema
 - [ ] SMPL-X mapping
 - [ ] UE/MetaHuman mapping

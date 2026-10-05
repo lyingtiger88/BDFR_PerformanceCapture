@@ -18,6 +18,7 @@ add_library(bdfrpc_core
     src/DeviceDiscovery.cpp
     src/Calibration.cpp
     src/SolverAdapters.cpp
+    src/BDFRFacialUdpSource.cpp
 )
 
 target_include_directories(bdfrpc_core PUBLIC include)
@@ -26,6 +27,10 @@ if(MSVC)
     target_compile_options(bdfrpc_core PRIVATE /W4 /permissive-)
 else()
     target_compile_options(bdfrpc_core PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(WIN32)
+    target_link_libraries(bdfrpc_core PRIVATE ws2_32)
 endif()
 
 if(BDFRPC_ENABLE_OPENCV)
@@ -50,6 +55,9 @@ endif()
 if(BDFRPC_BUILD_TOOLS)
     add_executable(bdfrpc_probe tools/bdfrpc_probe.cpp)
     target_link_libraries(bdfrpc_probe PRIVATE bdfrpc_core)
+
+    add_executable(bdfrpc_facial_udp_probe tools/bdfrpc_facial_udp_probe.cpp)
+    target_link_libraries(bdfrpc_facial_udp_probe PRIVATE bdfrpc_core)
 endif()
 
 if(BDFRPC_BUILD_TESTS)

@@ -51,6 +51,13 @@ struct DomainSample {
     Domain domain{Domain::Body};
     float confidence{0.0f};
     std::vector<float> values;
+    // Optional names parallel to values. Facial curves, skeletal channels and
+    // other semantic data must preserve their channel identity through fusion.
+    std::vector<std::string> channels;
+
+    bool channels_valid() const noexcept {
+        return channels.empty() || channels.size() == values.size();
+    }
 };
 
 struct CaptureFrame {
