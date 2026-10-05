@@ -36,13 +36,14 @@ if(WIN32)
 endif()
 
 if(BDFRPC_ENABLE_OPENCV)
+    find_package(Threads REQUIRED)
     find_package(OpenCV REQUIRED COMPONENTS core videoio imgproc)
     add_library(bdfrpc_opencv
         src/OpenCVCameraSource.cpp
         src/OpenCVDeviceEnumerator.cpp
     )
     target_include_directories(bdfrpc_opencv PUBLIC include)
-    target_link_libraries(bdfrpc_opencv PUBLIC bdfrpc_core ${OpenCV_LIBS})
+    target_link_libraries(bdfrpc_opencv PUBLIC bdfrpc_core Threads::Threads ${OpenCV_LIBS})
     target_compile_definitions(bdfrpc_opencv PUBLIC BDFRPC_HAS_OPENCV=1)
 
     if(BDFRPC_BUILD_TOOLS)
