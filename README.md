@@ -21,6 +21,7 @@ isolated so each upstream project retains its own dependency and license boundar
 - timestamped image buffers
 - `FrameSynchronizer` with configurable tolerance and bounded queues
 - per-stream received/emitted/drop/skew telemetry
+- remote-to-local clock rebasing with jitter/outlier tracking
 - `DeviceMonitor` for added/removed/changed capture devices
 - optional OpenCV camera source and device probing
 - camera intrinsics, distortion, extrinsics and calibration-profile persistence

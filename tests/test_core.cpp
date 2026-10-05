@@ -1,6 +1,7 @@
 #include "bdfrpc/AdapterProtocol.h"
 #include "bdfrpc/BDFRFacialUdpSource.h"
 #include "bdfrpc/Calibration.h"
+#include "bdfrpc/ClockSync.h"
 #include "bdfrpc/DeviceDiscovery.h"
 #include "bdfrpc/EasyMocapTcpSource.h"
 #include "bdfrpc/FusionCore.h"
@@ -107,6 +108,23 @@ int main() {
 
         sync.set_tolerance_ns(7'000'000);
         assert(sync.tolerance_ns() == 7'000'000);
+    }
+
+    {
+        ClockOffsetEstimator clock(0.5, 100'000'000);
+        const auto mapped0 = clock.update(1'000'000'000, 6'000'000'000);
+        assert(mapped0 == 6'000'000'000);
+        assert(clock.stats().offset_ns == 5'000'000'000);
+
+        const auto mapped1 = clock.update(2'000'000'000, 7'010'000'000);
+        assert(mapped1 >= 7'000'000'000);
+        assert(clock.stats().accepted_samples == 2);
+        assert(clock.stats().jitter_ns > 0);
+
+        const auto accepted_before = clock.stats().accepted_samples;
+        clock.update(3'000'000'000, 9'000'000'000);
+        assert(clock.stats().accepted_samples == accepted_before);
+        assert(clock.stats().rejected_samples == 1);
     }
 
     {

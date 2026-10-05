@@ -44,7 +44,7 @@
 - [ ] adapter health/watchdog/reconnect
 
 ## M4 — Fusion and retarget
-- [ ] clock-offset estimation at PerformanceCapture layer
+- [x] remote-to-local clock offset estimation and outlier rejection
 - [x] confidence-aware preferred/fallback source arbitration
 - [x] named semantic channels preserved through fusion
 - [ ] skeletal schema

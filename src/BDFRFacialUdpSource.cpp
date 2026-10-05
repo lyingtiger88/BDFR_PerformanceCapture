@@ -1,7 +1,9 @@
 #include "bdfrpc/BDFRFacialUdpSource.h"
+#include "bdfrpc/ClockSync.h"
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -37,6 +39,12 @@ constexpr std::size_t kMaxSourceLength = 1024;
 constexpr std::size_t kMaxFrameBytes = 1024 * 1024;
 constexpr std::size_t kMaxCurves = 4096;
 constexpr std::size_t kMaxStringLength = 1024;
+
+TimestampNs monotonic_now_ns() {
+    return static_cast<TimestampNs>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count());
+}
 
 bool read_u16(const std::vector<std::uint8_t>& bytes, std::size_t& offset,
               std::uint16_t& value) {
@@ -283,6 +291,7 @@ public:
     BDFRPCSocket socket{kInvalidSocket};
     std::uint16_t local_port{0};
     BDFRFacialUdpStats stats;
+    ClockOffsetEstimator clock;
     std::string last_error;
 };
 
@@ -413,6 +422,7 @@ std::optional<CaptureFrame> BDFRFacialUdpSource::poll() {
         return std::nullopt;
     }
 
+    const TimestampNs local_arrival_ns = monotonic_now_ns();
     std::vector<std::uint8_t> bytes(
         buffer.begin(),
         buffer.begin() + static_cast<std::ptrdiff_t>(received));
@@ -425,6 +435,15 @@ std::optional<CaptureFrame> BDFRFacialUdpSource::poll() {
         ++impl_->stats.packets_invalid;
         impl_->last_error = "invalid BDFR FacialAnimation UDP packet";
         return std::nullopt;
+    }
+
+    if (impl_->config.rebase_remote_clock && frame.timestamp_ns > 0) {
+        frame.timestamp_ns =
+            impl_->clock.update(frame.timestamp_ns, local_arrival_ns);
+        impl_->stats.clock_offset_ns = impl_->clock.stats().offset_ns;
+        impl_->stats.clock_jitter_ns = impl_->clock.stats().jitter_ns;
+        impl_->stats.clock_samples_rejected =
+            impl_->clock.stats().rejected_samples;
     }
 
     ++impl_->stats.packets_received;

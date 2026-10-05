@@ -13,6 +13,7 @@ struct BDFRFacialUdpConfig {
     std::string source_id{"bdfr_facial"};
     std::string bind_address{"0.0.0.0"};
     std::uint16_t port{0};
+    bool rebase_remote_clock{true};
 };
 
 struct BDFRFacialUdpStats {
@@ -21,6 +22,9 @@ struct BDFRFacialUdpStats {
     std::uint64_t socket_errors{0};
     std::uint64_t last_sequence{0};
     std::string last_remote_source;
+    TimestampNs clock_offset_ns{0};
+    TimestampNs clock_jitter_ns{0};
+    std::uint64_t clock_samples_rejected{0};
 };
 
 class BDFRFacialPacketCodec {

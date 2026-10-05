@@ -15,6 +15,7 @@ add_library(bdfrpc_core
     src/SourceRouter.cpp
     src/FusionCore.cpp
     src/AdapterProtocol.cpp
+    src/ClockSync.cpp
     src/DeviceDiscovery.cpp
     src/Calibration.cpp
     src/SolverAdapters.cpp
