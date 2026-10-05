@@ -2,6 +2,7 @@
 
 #include <QComboBox>
 #include <QFrame>
+#include <QFileDialog>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -46,6 +47,7 @@ PerformanceMainWindow::PerformanceMainWindow() {
 
 PerformanceMainWindow::~PerformanceMainWindow() {
     timer_->stop();
+    take_recorder_.stop();
     stop_solver_bridges();
     stop_cameras();
 }
@@ -78,6 +80,12 @@ void PerformanceMainWindow::build_ui() {
     top->addWidget(scan_button_);
     top->addWidget(start_button_);
     top->addWidget(stop_button_);
+    top->addSpacing(16);
+    record_button_ = new QPushButton("Record Take", central_);
+    stop_record_button_ = new QPushButton("Stop Recording", central_);
+    stop_record_button_->setEnabled(false);
+    top->addWidget(record_button_);
+    top->addWidget(stop_record_button_);
     top->addStretch(1);
     root->addLayout(top);
 
@@ -140,6 +148,12 @@ void PerformanceMainWindow::build_ui() {
     });
     connect(stop_button_, &QPushButton::clicked, this, [this] {
         stop_cameras();
+    });
+    connect(record_button_, &QPushButton::clicked, this, [this] {
+        start_recording();
+    });
+    connect(stop_record_button_, &QPushButton::clicked, this, [this] {
+        stop_recording();
     });
     connect(solver_start_button_, &QPushButton::clicked, this, [this] {
         start_solver_bridges();
@@ -352,6 +366,35 @@ void PerformanceMainWindow::apply_mode(int index) {
     fusion_runtime_.set_mode(mode);
 }
 
+void PerformanceMainWindow::start_recording() {
+    const auto path = QFileDialog::getSaveFileName(
+        this,
+        "Record Performance Take",
+        "capture.bdfrtake.csv",
+        "BDFR Performance Take (*.bdfrtake.csv);;CSV (*.csv)");
+    if (path.isEmpty()) return;
+
+    if (!take_recorder_.start(path.toStdString())) {
+        statusBar()->showMessage("Failed to open take file", 4000);
+        return;
+    }
+
+    record_button_->setEnabled(false);
+    stop_record_button_->setEnabled(true);
+    statusBar()->showMessage("Recording fused performance take");
+}
+
+void PerformanceMainWindow::stop_recording() {
+    if (!take_recorder_.recording()) return;
+    const auto frames = take_recorder_.frames_written();
+    take_recorder_.stop();
+    record_button_->setEnabled(true);
+    stop_record_button_->setEnabled(false);
+    statusBar()->showMessage(
+        QString("Take saved · %1 fused frames").arg(frames),
+        5000);
+}
+
 void PerformanceMainWindow::show_frame(
     CameraUi& camera,
     const CaptureFrame& frame) {
@@ -420,6 +463,12 @@ void PerformanceMainWindow::tick() {
     if (fused.samples.empty()) {
         fusion_status_->setText("Fusion: no fresh solver data");
     } else {
+        if (take_recorder_.recording()) {
+            if (!take_recorder_.append(fused)) {
+                statusBar()->showMessage("Take recording write failed", 4000);
+                stop_recording();
+            }
+        }
         std::string sources;
         for (std::size_t i = 0; i < fused.selected_sources.size(); ++i) {
             if (i) sources += ", ";
