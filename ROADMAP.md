@@ -12,33 +12,39 @@
 - [x] optional OpenCV live camera backend
 
 ## M1 — Live multi-camera
-- [ ] device enumeration and hot-plug detection
-- [ ] camera capability negotiation (resolution/FPS/pixel format)
-- [ ] configurable software-sync tolerance
-- [ ] per-camera latency/skew telemetry
-- [ ] dropped-frame counters
+- [x] portable OpenCV device probing
+- [x] generic hot-plug/change snapshot detection
+- [x] configurable software-sync tolerance
+- [x] per-camera skew telemetry
+- [x] stale/overflow drop counters
+- [ ] native Windows friendly-name/VID/PID enumeration
+- [ ] full camera capability negotiation
 - [ ] preview fan-out without blocking capture
 - [ ] hardware timestamp adapters where supported
 
 ## M2 — Calibration
-- [ ] intrinsics
-- [ ] distortion
-- [ ] extrinsics
-- [ ] calibration profile persistence
+- [x] intrinsics data model
+- [x] distortion model
+- [x] extrinsics data model
+- [x] versioned calibration profile persistence
+- [x] projection and reprojection-RMSE diagnostics
 - [ ] Charuco/AprilTag calibration workflow
-- [ ] reprojection-error diagnostics
+- [ ] calibration wizard UI
 
 ## M3 — Solver adapters
-- [ ] BDFR FacialAnimation adapter
-- [ ] EasyMocap adapter
-- [ ] independent Face Only mode
-- [ ] independent Body Only mode
-- [ ] Hybrid mode
+- [x] buffered BDFR FacialAnimation adapter foundation
+- [x] buffered EasyMocap adapter foundation
+- [x] Face Only routing policy
+- [x] Body Only routing policy
+- [x] Hybrid routing policy with Face/Head fallback
+- [x] versioned EasyMocap worker control bootstrap
+- [ ] FacialAnimation live UDP packet bridge
+- [ ] EasyMocap live solve execution
 - [ ] adapter health/watchdog/reconnect
 
 ## M4 — Fusion and retarget
-- [ ] clock-offset estimation
-- [ ] confidence-aware head-source arbitration
+- [ ] clock-offset estimation at PerformanceCapture layer
+- [x] confidence-aware preferred/fallback source arbitration
 - [ ] skeletal schema
 - [ ] SMPL-X mapping
 - [ ] UE/MetaHuman mapping

@@ -1,25 +1,36 @@
 # BDFR PerformanceCapture
 
-BDFR PerformanceCapture is the orchestration layer for modular performance capture: multi-camera acquisition, timestamp synchronization, source routing, full-performance fusion, adapters, retargeting and live/offline outputs.
+BDFR PerformanceCapture is the orchestration layer for modular performance capture:
+live multi-camera acquisition, timestamp synchronization, calibration, source routing,
+full-performance fusion, solver adapters, retargeting and live/offline outputs.
 
 The central design rule is **independent or hybrid operation**:
 
 - **Face Only** — BDFR FacialAnimation can run by itself.
-- **Body Only** — an external body/hand solver such as EasyMocap can run by itself.
-- **Hybrid** — face, head, body and hands are selected and fused per domain with timestamped failover.
+- **Body Only** — EasyMocap or another body/hand solver can run by itself.
+- **Hybrid** — face, head, body and hands are selected and fused per domain with confidence-aware fallback.
 
-No third-party mocap implementation is vendored into this repository. Adapters remain isolated so each upstream project retains its own dependency and license boundary.
+No third-party mocap implementation is vendored into this repository. Adapters remain
+isolated so each upstream project retains its own dependency and license boundary.
 
-## Current implemented core
+## Implemented foundation
 
 - C++17 / CMake portable core
 - `ICaptureSource` abstraction for arbitrary live/offline inputs
 - `CaptureManager` for N independent sources
-- `FrameSynchronizer` for timestamp-based multi-camera grouping
+- timestamped image buffers
+- `FrameSynchronizer` with configurable tolerance and bounded queues
+- per-stream received/emitted/drop/skew telemetry
+- `DeviceMonitor` for added/removed/changed capture devices
+- optional OpenCV camera source and device probing
+- camera intrinsics, distortion, extrinsics and calibration-profile persistence
+- projection / reprojection-RMSE diagnostics
 - `SourceRouter` with priority, confidence threshold, timeout and automatic fallback
-- `FusionCore` for deterministic per-domain Face / Head / Body / Left Hand / Right Hand selection
-- versioned adapter hello protocol for out-of-process integrations
-- core tests and Windows/Linux CI
+- `FusionCore` for deterministic Face / Head / Body / Left Hand / Right Hand selection
+- BDFR FacialAnimation and EasyMocap buffered adapter foundations
+- Face Only / Body Only / Hybrid routing policies
+- versioned EasyMocap JSON-lines worker bootstrap
+- Windows/Linux CI plus OpenCV backend compile-check
 
 ## Build
 
@@ -29,6 +40,20 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
+For local OpenCV camera support:
+
+```bash
+cmake -S . -B build -DBDFRPC_ENABLE_OPENCV=ON
+cmake --build build --config Release
+```
+
+Then `bdfrpc_devices` can probe local camera indices and
+`bdfrpc_camera_probe <index>` performs a short live capture test.
+
+See `ROADMAP.md`, `Docs/ARCHITECTURE.md`, `Docs/ADAPTERS.md` and
+`Docs/LIVE_CAPTURE.md`.
+
 ## License status
 
-BDFR PerformanceCapture's own project license has not yet been finalized. Third-party software, models and datasets remain subject to their own licenses.
+BDFR PerformanceCapture's own project license has not yet been finalized.
+Third-party software, models and datasets remain subject to their own licenses.

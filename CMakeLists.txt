@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(BDFR_PerformanceCapture VERSION 0.1.0 LANGUAGES CXX)
+project(BDFR_PerformanceCapture VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,6 +15,9 @@ add_library(bdfrpc_core
     src/SourceRouter.cpp
     src/FusionCore.cpp
     src/AdapterProtocol.cpp
+    src/DeviceDiscovery.cpp
+    src/Calibration.cpp
+    src/SolverAdapters.cpp
 )
 
 target_include_directories(bdfrpc_core PUBLIC include)
@@ -27,7 +30,10 @@ endif()
 
 if(BDFRPC_ENABLE_OPENCV)
     find_package(OpenCV REQUIRED COMPONENTS core videoio imgproc)
-    add_library(bdfrpc_opencv src/OpenCVCameraSource.cpp)
+    add_library(bdfrpc_opencv
+        src/OpenCVCameraSource.cpp
+        src/OpenCVDeviceEnumerator.cpp
+    )
     target_include_directories(bdfrpc_opencv PUBLIC include)
     target_link_libraries(bdfrpc_opencv PUBLIC bdfrpc_core ${OpenCV_LIBS})
     target_compile_definitions(bdfrpc_opencv PUBLIC BDFRPC_HAS_OPENCV=1)
@@ -35,6 +41,9 @@ if(BDFRPC_ENABLE_OPENCV)
     if(BDFRPC_BUILD_TOOLS)
         add_executable(bdfrpc_camera_probe tools/bdfrpc_camera_probe.cpp)
         target_link_libraries(bdfrpc_camera_probe PRIVATE bdfrpc_opencv)
+
+        add_executable(bdfrpc_devices tools/bdfrpc_devices.cpp)
+        target_link_libraries(bdfrpc_devices PRIVATE bdfrpc_opencv)
     endif()
 endif()
 
