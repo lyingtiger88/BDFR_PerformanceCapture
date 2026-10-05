@@ -6,6 +6,7 @@
 #include "bdfrpc/FusionRuntime.h"
 #include "bdfrpc/OpenCVCameraSource.h"
 #include "bdfrpc/OpenCVDeviceEnumerator.h"
+#include "bdfrpc/TakeRecorder.h"
 
 #include <QMainWindow>
 
@@ -47,6 +48,8 @@ private:
     void start_solver_bridges();
     void stop_solver_bridges();
     void apply_mode(int index);
+    void start_recording();
+    void stop_recording();
     void tick();
     void update_sync_status();
     void update_solver_status();
@@ -55,6 +58,7 @@ private:
     std::vector<CameraUi> cameras_;
     std::unique_ptr<FrameSynchronizer> synchronizer_;
     FusionRuntime fusion_runtime_{OperatingMode::Hybrid};
+    TakeRecorder take_recorder_;
 
     std::unique_ptr<BDFRFacialUdpSource> facial_source_;
     std::unique_ptr<EasyMocapTcpSource> easymocap_source_;
@@ -67,6 +71,8 @@ private:
     QPushButton* stop_button_{nullptr};
     QPushButton* solver_start_button_{nullptr};
     QPushButton* solver_stop_button_{nullptr};
+    QPushButton* record_button_{nullptr};
+    QPushButton* stop_record_button_{nullptr};
     QSpinBox* facial_port_{nullptr};
     QSpinBox* easymocap_port_{nullptr};
     QLabel* capture_status_{nullptr};
