@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(BDFRPC_BUILD_TOOLS "Build diagnostic tools" ON)
 option(BDFRPC_BUILD_TESTS "Build tests" ON)
 option(BDFRPC_ENABLE_OPENCV "Enable live UVC/OpenCV camera capture" OFF)
+option(BDFRPC_BUILD_STUDIO "Build the Qt BDFR Performance Studio application" OFF)
 
 add_library(bdfrpc_core
     src/CaptureManager.cpp
@@ -80,4 +81,11 @@ if(BDFRPC_BUILD_TESTS)
     add_executable(bdfrpc_core_tests tests/test_core.cpp)
     target_link_libraries(bdfrpc_core_tests PRIVATE bdfrpc_core)
     add_test(NAME bdfrpc_core_tests COMMAND bdfrpc_core_tests)
+endif()
+
+if(BDFRPC_BUILD_STUDIO)
+    if(NOT BDFRPC_ENABLE_OPENCV)
+        message(FATAL_ERROR "BDFRPC_BUILD_STUDIO requires BDFRPC_ENABLE_OPENCV=ON")
+    endif()
+    add_subdirectory(apps/BDFRPerformanceStudio)
 endif()
