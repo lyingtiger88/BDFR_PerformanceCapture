@@ -1,11 +1,13 @@
 #include "bdfrpc/EasyMocapTcpSource.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -38,7 +40,7 @@ TimestampNs monotonic_now_ns() {
 }
 
 std::string key_token(const std::string& key) {
-    return """ + key + """;
+    return "\"" + key + "\"";
 }
 
 bool extract_value_span(

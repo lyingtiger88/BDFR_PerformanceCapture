@@ -32,6 +32,7 @@ isolated so each upstream project retains its own dependency and license boundar
 - named semantic channels so FACS/ARKit/skeletal labels survive fusion
 - Face Only / Body Only / Hybrid routing policies
 - versioned EasyMocap JSON-lines worker bootstrap
+- native TCP receiver compatible with EasyMocap `BaseSocketClient.send_smpl()`
 - Windows/Linux CI plus OpenCV backend compile-check
 
 ## Build
@@ -51,6 +52,10 @@ cmake --build build --config Release
 
 Then `bdfrpc_devices` can probe local camera indices and
 `bdfrpc_camera_probe <index>` performs a short live capture test.
+
+For solver transport tests:
+- `bdfrpc_facial_udp_probe <port>` listens for BDFR FacialAnimation live packets.
+- `bdfrpc_easymocap_probe <port>` accepts EasyMocap `send_smpl()` TCP streams.
 
 See `ROADMAP.md`, `Docs/ARCHITECTURE.md`, `Docs/ADAPTERS.md` and
 `Docs/LIVE_CAPTURE.md`.

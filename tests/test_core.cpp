@@ -2,6 +2,7 @@
 #include "bdfrpc/BDFRFacialUdpSource.h"
 #include "bdfrpc/Calibration.h"
 #include "bdfrpc/DeviceDiscovery.h"
+#include "bdfrpc/EasyMocapTcpSource.h"
 #include "bdfrpc/FusionCore.h"
 #include "bdfrpc/FrameSynchronizer.h"
 #include "bdfrpc/SolverAdapters.h"
@@ -260,6 +261,25 @@ int main() {
         assert(decoded.samples[0].channels[1] == "jawOpen");
         assert(decoded.samples[1].channels[0] == "pitch");
         assert(decoded.samples[0].channels_valid());
+    }
+
+    {
+        const std::string payload =
+            "[{\"id\":0,\"poses\":[[1,2,3,4]],\"shapes\":[[0.1,0.2]],"
+            "\"expression\":[[0.3,0.4]],\"Rh\":[[0.5,0.6,0.7]],"
+            "\"Th\":[[1,2,3]]}]";
+
+        CaptureFrame decoded;
+        assert(EasyMocapPayloadCodec::decode(
+            payload, "easymocap", 7, 3'000'000'000, decoded));
+        assert(decoded.source_id == "easymocap");
+        assert(decoded.sequence == 7);
+        assert(decoded.samples.size() == 2);
+        assert(decoded.samples[0].domain == Domain::Body);
+        assert(decoded.samples[0].channels_valid());
+        assert(decoded.samples[0].channels[0] == "subject.0.Rh.0");
+        assert(decoded.samples[1].domain == Domain::Face);
+        assert(decoded.samples[1].channels[0] == "subject.0.expression.0");
     }
 
     std::cout << "bdfrpc_core_tests: OK\n";

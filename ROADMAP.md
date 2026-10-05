@@ -39,7 +39,8 @@
 - [x] Hybrid routing policy with Face/Head fallback
 - [x] versioned EasyMocap worker control bootstrap
 - [x] FacialAnimation live UDP packet bridge
-- [ ] EasyMocap live solve execution
+- [x] native receiver for EasyMocap BaseSocketClient.send_smpl()
+- [ ] automatic EasyMocap solver launch / live solve execution
 - [ ] adapter health/watchdog/reconnect
 
 ## M4 — Fusion and retarget

@@ -19,6 +19,7 @@ add_library(bdfrpc_core
     src/Calibration.cpp
     src/SolverAdapters.cpp
     src/BDFRFacialUdpSource.cpp
+    src/EasyMocapTcpSource.cpp
 )
 
 target_include_directories(bdfrpc_core PUBLIC include)
@@ -58,6 +59,9 @@ if(BDFRPC_BUILD_TOOLS)
 
     add_executable(bdfrpc_facial_udp_probe tools/bdfrpc_facial_udp_probe.cpp)
     target_link_libraries(bdfrpc_facial_udp_probe PRIVATE bdfrpc_core)
+
+    add_executable(bdfrpc_easymocap_probe tools/bdfrpc_easymocap_probe.cpp)
+    target_link_libraries(bdfrpc_easymocap_probe PRIVATE bdfrpc_core)
 endif()
 
 if(BDFRPC_BUILD_TESTS)
