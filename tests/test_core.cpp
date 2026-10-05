@@ -9,10 +9,12 @@
 #include "bdfrpc/FusionRuntime.h"
 #include "bdfrpc/SolverAdapters.h"
 #include "bdfrpc/SourceHealth.h"
+#include "bdfrpc/TakeRecorder.h"
 
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <string>
@@ -380,6 +382,31 @@ int main() {
         assert(decoded.samples[0].channels[0] == "subject.0.Rh.0");
         assert(decoded.samples[1].domain == Domain::Face);
         assert(decoded.samples[1].channels[0] == "subject.0.expression.0");
+    }
+
+    {
+        const std::string path = "bdfrpc_take_recorder_test.csv";
+        TakeRecorder recorder;
+        assert(recorder.start(path));
+
+        FusedPerformanceFrame frame;
+        frame.timestamp_ns = 4'000'000'000;
+        DomainSample face = sample(Domain::Face, 0.95f, 0.5f);
+        face.channels = {"jawOpen"};
+        frame.samples = {face};
+        frame.selected_sources = {"bdfr_facial"};
+
+        assert(recorder.append(frame));
+        assert(recorder.frames_written() == 1);
+        recorder.stop();
+
+        std::ifstream input(path);
+        std::string content(
+            (std::istreambuf_iterator<char>(input)),
+            std::istreambuf_iterator<char>());
+        assert(content.find("timestamp_ns,domain,source,confidence,channel,value") != std::string::npos);
+        assert(content.find("jawOpen") != std::string::npos);
+        std::remove(path.c_str());
     }
 
     std::cout << "bdfrpc_core_tests: OK\n";
