@@ -31,7 +31,8 @@
 - [x] versioned calibration profile persistence
 - [x] projection and reprojection-RMSE diagnostics
 - [x] live chessboard intrinsic-calibration tool
-- [ ] Charuco/AprilTag multi-camera calibration workflow
+- [x] synchronized chessboard multi-camera extrinsic rig calibration
+- [ ] ChArUco/AprilTag calibration workflow
 - [ ] calibration wizard UI
 
 ## M3 — Solver adapters

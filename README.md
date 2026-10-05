@@ -82,8 +82,13 @@ Then `bdfrpc_devices` can probe local camera indices,
 `bdfrpc_multicam_probe [seconds] [last-index] [tolerance-ms]` runs a real
 multi-camera capture session and prints per-camera FPS, skew and drop telemetry.
 `bdfrpc_calibrate_camera [device] [cols] [rows] [square-size] [samples] [output]`
-collects live chessboard observations, solves intrinsics/distortion and saves a
-versioned BDFR calibration profile.
+collects live chessboard observations, solves intrinsics/distortion and upserts the
+camera into a versioned BDFR calibration profile. Run it for each camera using the
+same output file to build a multi-camera profile.
+
+`bdfrpc_calibrate_rig [profile] [reference-index] [cols] [rows] [square-size] [samples] [output]`
+uses synchronized views of the same chessboard and OpenCV stereo calibration to
+solve each camera's extrinsics relative to a selected reference camera.
 
 For solver transport tests:
 - `bdfrpc_facial_udp_probe <port>` listens for BDFR FacialAnimation live packets.

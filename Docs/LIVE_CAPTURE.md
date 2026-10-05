@@ -69,3 +69,21 @@ bdfrpc_calibrate_camera 0 9 6 0.025 20 camera0.bdfrcal
 
 The current tool solves per-camera intrinsics and distortion. Multi-camera
 extrinsics and ChArUco/AprilTag workflows remain separate upcoming steps.
+
+
+## Multi-camera rig calibration
+
+After intrinsics for each camera have been collected into one profile, the rig
+extrinsics can be solved from synchronized chessboard observations:
+
+```bash
+bdfrpc_calibrate_rig bdfr_camera_calibration.txt 0 9 6 0.025 15 bdfr_rig_calibration.txt
+```
+
+The selected reference camera becomes the rig/world origin. For every other
+camera, the tool uses synchronized observations and OpenCV `stereoCalibrate`
+with fixed intrinsics, then writes the solved world-to-camera rotation and
+translation back into the BDFR calibration profile.
+
+This is the calibration path intended for multi-view body reconstruction and
+EasyMocap integration.
