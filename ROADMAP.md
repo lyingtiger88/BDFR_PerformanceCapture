@@ -43,7 +43,8 @@
 - [x] FacialAnimation live UDP packet bridge
 - [x] native receiver for EasyMocap BaseSocketClient.send_smpl()
 - [ ] automatic EasyMocap solver launch / live solve execution
-- [ ] adapter health/watchdog/reconnect
+- [x] source health state / timeout / recovery monitor
+- [ ] active watchdog-driven process restart
 
 ## M4 — Fusion and retarget
 - [x] remote-to-local clock offset estimation and outlier rejection
@@ -56,7 +57,7 @@
 
 ## M5 — Studio UI
 - [ ] camera grid
-- [ ] source health
+- [x] source health model (UI binding still pending)
 - [ ] sync status
 - [ ] calibration wizard
 - [ ] source routing panel

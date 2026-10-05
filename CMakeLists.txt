@@ -19,6 +19,7 @@ add_library(bdfrpc_core
     src/DeviceDiscovery.cpp
     src/Calibration.cpp
     src/SolverAdapters.cpp
+    src/SourceHealth.cpp
     src/BDFRFacialUdpSource.cpp
     src/EasyMocapTcpSource.cpp
 )

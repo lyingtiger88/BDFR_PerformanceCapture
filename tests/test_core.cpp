@@ -7,6 +7,7 @@
 #include "bdfrpc/FusionCore.h"
 #include "bdfrpc/FrameSynchronizer.h"
 #include "bdfrpc/SolverAdapters.h"
+#include "bdfrpc/SourceHealth.h"
 
 #include <cassert>
 #include <cmath>
@@ -279,6 +280,32 @@ int main() {
         assert(decoded.samples[0].channels[1] == "jawOpen");
         assert(decoded.samples[1].channels[0] == "pitch");
         assert(decoded.samples[0].channels_valid());
+    }
+
+    {
+        SourceHealthMonitor health;
+        health.configure("cam0", 100'000'000);
+        auto initial = health.snapshot(1'000'000'000);
+        assert(initial.size() == 1);
+        assert(initial[0].state == SourceHealthState::Unknown);
+
+        health.observe_frame("cam0", 1'000'000'000);
+        auto live = health.snapshot(1'050'000'000);
+        assert(live[0].state == SourceHealthState::Healthy);
+        assert(live[0].frames_observed == 1);
+
+        auto stale = health.snapshot(1'200'000'001);
+        assert(stale[0].state == SourceHealthState::Stale);
+
+        health.observe_failure("cam0", 1'210'000'000, "camera disconnected");
+        auto failed = health.snapshot(1'220'000'000);
+        assert(failed[0].state == SourceHealthState::Failed);
+        assert(failed[0].failures == 1);
+
+        health.observe_frame("cam0", 1'230'000'000);
+        auto recovered = health.snapshot(1'240'000'000);
+        assert(recovered[0].state == SourceHealthState::Healthy);
+        assert(recovered[0].message.empty());
     }
 
     {

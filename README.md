@@ -22,6 +22,7 @@ isolated so each upstream project retains its own dependency and license boundar
 - `FrameSynchronizer` with configurable tolerance and bounded queues
 - per-stream received/emitted/drop/skew telemetry
 - remote-to-local clock rebasing with jitter/outlier tracking
+- thread-safe source health monitor with Healthy/Stale/Failed recovery state
 - `DeviceMonitor` for added/removed/changed capture devices
 - optional OpenCV camera source and device probing
 - independent asynchronous capture thread and bounded frame queue per camera
