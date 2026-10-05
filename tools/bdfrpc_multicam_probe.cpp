@@ -3,6 +3,7 @@
 #include "bdfrpc/OpenCVCameraSource.h"
 #include "bdfrpc/OpenCVDeviceEnumerator.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <iomanip>
@@ -10,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 int main(int argc, char** argv) {

@@ -17,9 +17,11 @@
 - [x] configurable software-sync tolerance
 - [x] per-camera skew telemetry
 - [x] stale/overflow drop counters
+- [x] independent asynchronous capture thread per local camera
+- [x] live multicamera hardware probe with FPS/skew/drop table
 - [ ] native Windows friendly-name/VID/PID enumeration
 - [ ] full camera capability negotiation
-- [ ] preview fan-out without blocking capture
+- [ ] preview fan-out / UI subscribers without blocking capture
 - [ ] hardware timestamp adapters where supported
 
 ## M2 — Calibration

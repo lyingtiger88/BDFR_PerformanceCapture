@@ -51,6 +51,9 @@ if(BDFRPC_ENABLE_OPENCV)
 
         add_executable(bdfrpc_devices tools/bdfrpc_devices.cpp)
         target_link_libraries(bdfrpc_devices PRIVATE bdfrpc_opencv)
+
+        add_executable(bdfrpc_multicam_probe tools/bdfrpc_multicam_probe.cpp)
+        target_link_libraries(bdfrpc_multicam_probe PRIVATE bdfrpc_opencv)
     endif()
 endif()
 

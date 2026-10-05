@@ -24,6 +24,8 @@ isolated so each upstream project retains its own dependency and license boundar
 - remote-to-local clock rebasing with jitter/outlier tracking
 - `DeviceMonitor` for added/removed/changed capture devices
 - optional OpenCV camera source and device probing
+- independent asynchronous capture thread and bounded frame queue per camera
+- live multi-camera probe with FPS/skew/drop diagnostics
 - camera intrinsics, distortion, extrinsics and calibration-profile persistence
 - projection / reprojection-RMSE diagnostics
 - `SourceRouter` with priority, confidence threshold, timeout and automatic fallback
@@ -51,8 +53,10 @@ cmake -S . -B build -DBDFRPC_ENABLE_OPENCV=ON
 cmake --build build --config Release
 ```
 
-Then `bdfrpc_devices` can probe local camera indices and
-`bdfrpc_camera_probe <index>` performs a short live capture test.
+Then `bdfrpc_devices` can probe local camera indices,
+`bdfrpc_camera_probe <index>` performs a short single-camera test, and
+`bdfrpc_multicam_probe [seconds] [last-index] [tolerance-ms]` runs a real
+multi-camera capture session and prints per-camera FPS, skew and drop telemetry.
 
 For solver transport tests:
 - `bdfrpc_facial_udp_probe <port>` listens for BDFR FacialAnimation live packets.
