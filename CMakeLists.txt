@@ -14,6 +14,8 @@ add_library(bdfrpc_core
     src/FrameSynchronizer.cpp
     src/SourceRouter.cpp
     src/FusionCore.cpp
+    src/LatestFrameStore.cpp
+    src/FusionRuntime.cpp
     src/AdapterProtocol.cpp
     src/ClockSync.cpp
     src/DeviceDiscovery.cpp

@@ -50,6 +50,8 @@
 - [x] remote-to-local clock offset estimation and outlier rejection
 - [x] confidence-aware preferred/fallback source arbitration
 - [x] named semantic channels preserved through fusion
+- [x] asynchronous latest-frame solver cache
+- [x] runtime Face/Body/Hybrid failover without lockstep solver timestamps
 - [ ] skeletal schema
 - [ ] SMPL-X mapping
 - [ ] UE/MetaHuman mapping

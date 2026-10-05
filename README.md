@@ -31,6 +31,7 @@ isolated so each upstream project retains its own dependency and license boundar
 - projection / reprojection-RMSE diagnostics
 - `SourceRouter` with priority, confidence threshold, timeout and automatic fallback
 - `FusionCore` for deterministic Face / Head / Body / Left Hand / Right Hand selection
+- asynchronous `LatestFrameStore` + `FusionRuntime` so solver streams do not need lockstep timestamps
 - BDFR FacialAnimation and EasyMocap buffered adapter foundations
 - protocol-compatible live UDP receiver for BDFR FacialAnimation packets
 - named semantic channels so FACS/ARKit/skeletal labels survive fusion

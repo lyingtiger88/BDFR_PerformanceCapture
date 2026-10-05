@@ -6,6 +6,7 @@
 #include "bdfrpc/EasyMocapTcpSource.h"
 #include "bdfrpc/FusionCore.h"
 #include "bdfrpc/FrameSynchronizer.h"
+#include "bdfrpc/FusionRuntime.h"
 #include "bdfrpc/SolverAdapters.h"
 #include "bdfrpc/SourceHealth.h"
 
@@ -280,6 +281,60 @@ int main() {
         assert(decoded.samples[0].channels[1] == "jawOpen");
         assert(decoded.samples[1].channels[0] == "pitch");
         assert(decoded.samples[0].channels_valid());
+    }
+
+    {
+        LatestFrameStore store(1'000'000'000);
+        CaptureFrame newer{
+            "solver", "stream", 2, 2'000'000'000,
+            {sample(Domain::Body, 0.9f, 2.0f)}
+        };
+        assert(store.push(newer));
+
+        CaptureFrame older{
+            "solver", "stream", 1, 1'900'000'000,
+            {sample(Domain::Body, 0.9f, 1.0f)}
+        };
+        assert(!store.push(older));
+        assert(store.stats().rejected_out_of_order == 1);
+
+        const auto snap = store.snapshot(2'100'000'000);
+        assert(snap.frames.size() == 1);
+        assert(snap.frames[0].sequence == 2);
+    }
+
+    {
+        FusionRuntime runtime(OperatingMode::Hybrid);
+
+        assert(runtime.submit({
+            "bdfr_facial", "face", 1, 3'000'000'000,
+            {sample(Domain::Face, 0.95f, 10.0f),
+             sample(Domain::Head, 0.95f, 11.0f)}
+        }));
+        assert(runtime.submit({
+            "easymocap", "body", 1, 3'000'000'000,
+            {sample(Domain::Face, 0.80f, 20.0f),
+             sample(Domain::Body, 0.95f, 21.0f)}
+        }));
+
+        auto fused = runtime.evaluate(3'050'000'000);
+        assert(fused.samples.size() == 3);
+        assert(fused.selected_sources[0] == "bdfr_facial");
+
+        assert(runtime.submit({
+            "easymocap", "body", 2, 3'200'000'000,
+            {sample(Domain::Face, 0.80f, 30.0f),
+             sample(Domain::Body, 0.95f, 31.0f)}
+        }));
+
+        fused = runtime.evaluate(3'200'000'000);
+        assert(fused.samples.size() >= 2);
+        assert(fused.selected_sources[0] == "easymocap");
+
+        runtime.set_mode(OperatingMode::BodyOnly);
+        fused = runtime.evaluate(3'200'000'000);
+        assert(!fused.samples.empty());
+        assert(fused.selected_sources[0] == "easymocap");
     }
 
     {
