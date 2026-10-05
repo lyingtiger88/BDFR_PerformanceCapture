@@ -52,3 +52,20 @@ EasyMocap.
 The Python EasyMocap worker bootstrap lives in `adapters/easymocap_worker.py`.
 It already exposes a versioned JSON-lines control handshake and dependency probe,
 while actual model execution remains isolated behind that process boundary.
+
+
+## Live intrinsic calibration
+
+With `BDFRPC_ENABLE_OPENCV=ON`, `bdfrpc_calibrate_camera` performs a real
+live calibration session from a local camera. It detects chessboard inner
+corners, refines them to subpixel accuracy, calls OpenCV `calibrateCamera`,
+then saves the result through `CalibrationProfile`.
+
+Example:
+
+```bash
+bdfrpc_calibrate_camera 0 9 6 0.025 20 camera0.bdfrcal
+```
+
+The current tool solves per-camera intrinsics and distortion. Multi-camera
+extrinsics and ChArUco/AprilTag workflows remain separate upcoming steps.

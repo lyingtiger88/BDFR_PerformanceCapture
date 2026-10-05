@@ -29,6 +29,7 @@ isolated so each upstream project retains its own dependency and license boundar
 - live multi-camera probe with FPS/skew/drop diagnostics
 - camera intrinsics, distortion, extrinsics and calibration-profile persistence
 - projection / reprojection-RMSE diagnostics
+- live chessboard camera intrinsic calibration and profile export
 - `SourceRouter` with priority, confidence threshold, timeout and automatic fallback
 - `FusionCore` for deterministic Face / Head / Body / Left Hand / Right Hand selection
 - asynchronous `LatestFrameStore` + `FusionRuntime` so solver streams do not need lockstep timestamps
@@ -59,6 +60,9 @@ Then `bdfrpc_devices` can probe local camera indices,
 `bdfrpc_camera_probe <index>` performs a short single-camera test, and
 `bdfrpc_multicam_probe [seconds] [last-index] [tolerance-ms]` runs a real
 multi-camera capture session and prints per-camera FPS, skew and drop telemetry.
+`bdfrpc_calibrate_camera [device] [cols] [rows] [square-size] [samples] [output]`
+collects live chessboard observations, solves intrinsics/distortion and saves a
+versioned BDFR calibration profile.
 
 For solver transport tests:
 - `bdfrpc_facial_udp_probe <port>` listens for BDFR FacialAnimation live packets.

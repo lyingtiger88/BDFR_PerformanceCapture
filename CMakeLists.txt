@@ -40,7 +40,7 @@ endif()
 
 if(BDFRPC_ENABLE_OPENCV)
     find_package(Threads REQUIRED)
-    find_package(OpenCV REQUIRED COMPONENTS core videoio imgproc)
+    find_package(OpenCV REQUIRED COMPONENTS core videoio imgproc calib3d)
     add_library(bdfrpc_opencv
         src/OpenCVCameraSource.cpp
         src/OpenCVDeviceEnumerator.cpp
@@ -58,6 +58,9 @@ if(BDFRPC_ENABLE_OPENCV)
 
         add_executable(bdfrpc_multicam_probe tools/bdfrpc_multicam_probe.cpp)
         target_link_libraries(bdfrpc_multicam_probe PRIVATE bdfrpc_opencv)
+
+        add_executable(bdfrpc_calibrate_camera tools/bdfrpc_calibrate_camera.cpp)
+        target_link_libraries(bdfrpc_calibrate_camera PRIVATE bdfrpc_opencv)
     endif()
 endif()
 

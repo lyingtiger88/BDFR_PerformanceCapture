@@ -30,7 +30,8 @@
 - [x] extrinsics data model
 - [x] versioned calibration profile persistence
 - [x] projection and reprojection-RMSE diagnostics
-- [ ] Charuco/AprilTag calibration workflow
+- [x] live chessboard intrinsic-calibration tool
+- [ ] Charuco/AprilTag multi-camera calibration workflow
 - [ ] calibration wizard UI
 
 ## M3 — Solver adapters
