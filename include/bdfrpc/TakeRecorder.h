@@ -15,6 +15,7 @@ public:
 
     bool start(const std::string& path);
     bool append(const FusedPerformanceFrame& frame);
+    bool flush();
     void stop();
 
     bool recording() const noexcept { return stream_.is_open(); }
