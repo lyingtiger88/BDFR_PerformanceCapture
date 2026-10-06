@@ -70,6 +70,12 @@ bool TakeRecorder::append(const FusedPerformanceFrame& frame) {
     return true;
 }
 
+bool TakeRecorder::flush() {
+    if (!stream_) return false;
+    stream_.flush();
+    return static_cast<bool>(stream_);
+}
+
 void TakeRecorder::stop() {
     if (stream_.is_open()) {
         stream_.flush();
