@@ -478,7 +478,10 @@ int main() {
         const auto* left_ankle = preview.find_joint("left_ankle");
         assert(left_knee != nullptr);
         assert(left_ankle != nullptr);
-        assert(left_ankle->position[1] < left_knee->position[1]);
+        const float dx = left_ankle->position[0] - left_knee->position[0];
+        const float dy = left_ankle->position[1] - left_knee->position[1];
+        const float dz = left_ankle->position[2] - left_knee->position[2];
+        assert(std::sqrt(dx*dx + dy*dy + dz*dz) > 0.30f);
     }
 
     {
