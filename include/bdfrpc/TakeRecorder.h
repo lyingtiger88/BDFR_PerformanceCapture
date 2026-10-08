@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bdfrpc/Types.h"
+#include "bdfrpc/BinaryTake.h"
 
 #include <cstdint>
 #include <fstream>
@@ -9,7 +10,6 @@
 
 namespace bdfrpc {
 
-class BinaryTakeWriter;
 
 class TakeRecorder {
 public:
