@@ -473,11 +473,23 @@ int main() {
         assert(mapped->find_joint("jaw") != nullptr);
         assert(std::abs(mapped->translation[0] - 1.0f) < 1e-6f);
 
-        const auto meta = RetargetProfile::metahuman_body();
+        auto meta = RetargetProfile::metahuman_body();
+        meta.set_translation_scale(100.0f);
+
+        // 90-degree basis around Z maps canonical X rotation into Y.
+        const float half = 0.78539816339f;
+        meta.set_joint_basis(
+            "left_shoulder",
+            {std::cos(half), 0.0f, 0.0f, std::sin(half)});
+
         const auto retargeted = retarget_skeleton(*mapped, meta);
         assert(retargeted.profile_name == "MetaHuman Body");
         assert(!retargeted.bones.empty());
         assert(retargeted.bones.front().bone == "pelvis");
+        assert(
+            std::abs(
+                retargeted.root_translation[0] -
+                mapped->translation[0] * 100.0f) < 1e-4f);
 
         const auto preview = SkeletonKinematics::solve(*mapped);
         assert(preview.joints.size() == mapped->joints.size());
@@ -489,6 +501,33 @@ int main() {
         const float dy = left_ankle->position[1] - left_knee->position[1];
         const float dz = left_ankle->position[2] - left_knee->position[2];
         assert(std::sqrt(dx*dx + dy*dy + dz*dz) > 0.30f);
+    }
+
+    {
+        const float half = 0.78539816339f;
+        const Quaternion z90{
+            std::cos(half),
+            0.0f,
+            0.0f,
+            std::sin(half)
+        };
+
+        const AxisAngle x90{1.57079632679f, 0.0f, 0.0f};
+        const auto transformed =
+            transform_rotation_basis(x90, z90);
+
+        assert(std::abs(transformed.x) < 1e-4f);
+        assert(
+            std::abs(
+                transformed.y -
+                1.57079632679f) < 1e-4f);
+
+        const auto v =
+            transform_vector_basis(
+                {1.0f, 0.0f, 0.0f},
+                z90);
+        assert(std::abs(v[0]) < 1e-4f);
+        assert(std::abs(v[1] - 1.0f) < 1e-4f);
     }
 
     {

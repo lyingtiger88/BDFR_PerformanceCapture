@@ -58,7 +58,8 @@
 - [x] canonical skeletal schema
 - [x] EasyMocap SMPL24 / SMPL-X 87 / SMPL-X 165 canonical mapping
 - [x] UE Mannequin / MetaHuman canonical bone-name mapping foundation
-- [ ] target-space rest-pose/orientation retarget solve
+- [x] configurable target-space joint/root basis correction engine
+- [ ] validated asset-specific MetaHuman rest-pose correction profile
 - [x] Blender/Maya BVH animation export bridge
 
 ## M5 — Studio UI
