@@ -10,6 +10,7 @@
 #include "bdfrpc/EasyMocapTcpSource.h"
 #include "bdfrpc/FusionCore.h"
 #include "bdfrpc/FrameSynchronizer.h"
+#include "bdfrpc/FrameFanout.h"
 #include "bdfrpc/FusionRuntime.h"
 #include "bdfrpc/SolverAdapters.h"
 #include "bdfrpc/SourceHealth.h"
@@ -117,6 +118,55 @@ static std::vector<std::uint8_t> make_facial_packet() {
 }
 
 int main() {
+    {
+        FrameFanout fanout(2);
+        const auto preview =
+            fanout.subscribe("preview", 1);
+        const auto solver =
+            fanout.subscribe("solver", 3);
+
+        auto bytes =
+            std::make_shared<std::vector<std::uint8_t>>(12, 7);
+
+        for (std::uint64_t i = 1; i <= 4; ++i) {
+            CaptureFrame frame;
+            frame.source_id = "camera0";
+            frame.stream_id = "camera0";
+            frame.sequence = i;
+            frame.timestamp_ns =
+                static_cast<TimestampNs>(i) * 1'000'000;
+            frame.image.width = 2;
+            frame.image.height = 2;
+            frame.image.stride_bytes = 6;
+            frame.image.format = PixelFormat::BGR8;
+            frame.image.bytes = bytes;
+            fanout.publish(frame);
+        }
+
+        const auto pstats = fanout.stats(preview);
+        const auto sstats = fanout.stats(solver);
+        assert(pstats.has_value());
+        assert(sstats.has_value());
+        assert(pstats->received == 4);
+        assert(pstats->dropped == 3);
+        assert(pstats->queued == 1);
+        assert(sstats->received == 4);
+        assert(sstats->dropped == 1);
+        assert(sstats->queued == 3);
+
+        const auto newest = fanout.latest(preview);
+        assert(newest.has_value());
+        assert(newest->sequence == 4);
+        assert(newest->image.bytes == bytes);
+
+        const auto first_solver = fanout.poll(solver);
+        assert(first_solver.has_value());
+        assert(first_solver->sequence == 2);
+
+        assert(fanout.unsubscribe(preview));
+        assert(!fanout.stats(preview).has_value());
+    }
+
     {
         FrameSynchronizer sync(5'000'000, 2);
         sync.set_required_streams({"cam0", "cam1", "cam2"});

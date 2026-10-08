@@ -21,7 +21,7 @@
 - [x] live multicamera hardware probe with FPS/skew/drop table
 - [ ] native Windows friendly-name/VID/PID enumeration
 - [ ] full camera capability negotiation
-- [ ] preview fan-out / UI subscribers without blocking capture
+- [x] bounded frame fan-out core for independent preview/solver/recorder consumers
 - [ ] hardware timestamp adapters where supported
 
 ## M2 — Calibration
@@ -69,7 +69,7 @@
 - [ ] calibration wizard
 - [x] Face Only / Body Only / Hybrid mode control and live bridge status
 - [x] canonical forward-kinematics preview core
-- [ ] interactive 3D viewer UI
+- [x] interactive 3D skeleton viewer UI with live/playback orbit and zoom
 - [x] fused take recording and CSV take reader core
 - [x] Studio take playback controls
 - [x] take session directory index core

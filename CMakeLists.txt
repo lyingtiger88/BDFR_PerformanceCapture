@@ -13,6 +13,7 @@ option(BDFRPC_BUILD_STUDIO "Build the Qt BDFR Performance Studio application" OF
 add_library(bdfrpc_core
     src/CaptureManager.cpp
     src/FrameSynchronizer.cpp
+    src/FrameFanout.cpp
     src/SourceRouter.cpp
     src/FusionCore.cpp
     src/LatestFrameStore.cpp
