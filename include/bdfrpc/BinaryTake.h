@@ -23,6 +23,9 @@ public:
     std::uint64_t frames_written() const noexcept { return frames_written_; }
     const std::string& path() const noexcept { return path_; }
     const std::string& last_error() const noexcept { return last_error_; }
+    bool recovered_truncated_tail() const noexcept {
+        return recovered_truncated_tail_;
+    }
 
 private:
     std::ofstream stream_;
@@ -33,7 +36,9 @@ private:
 
 class BinaryTakeReader {
 public:
-    bool load(const std::string& path);
+    bool load(
+        const std::string& path,
+        bool recover_truncated_tail = true);
     void clear();
 
     bool loaded() const noexcept { return !frames_.empty(); }
@@ -54,6 +59,7 @@ private:
     std::string path_;
     std::vector<FusedPerformanceFrame> frames_;
     std::string last_error_;
+    bool recovered_truncated_tail_{false};
 };
 
 } // namespace bdfrpc

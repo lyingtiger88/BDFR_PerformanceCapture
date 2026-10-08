@@ -80,5 +80,6 @@
 - [ ] long-session soak tests
 - [ ] latency benchmarks
 - [x] deterministic binary BDFR Take v1 + legacy CSV compatibility
-- [ ] crash recovery
+- [x] truncated-tail recovery for binary takes after interrupted writes
+- [ ] full application/session-state crash recovery
 - [ ] signed Windows test builds

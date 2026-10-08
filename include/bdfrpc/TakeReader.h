@@ -26,11 +26,15 @@ public:
     std::size_t lower_bound_index(TimestampNs timestamp_ns) const noexcept;
 
     const std::string& last_error() const noexcept { return last_error_; }
+    bool recovered_truncated_tail() const noexcept {
+        return recovered_truncated_tail_;
+    }
 
 private:
     std::string path_;
     std::vector<FusedPerformanceFrame> frames_;
     std::string last_error_;
+    bool recovered_truncated_tail_{false};
 };
 
 } // namespace bdfrpc

@@ -94,7 +94,9 @@ bool TakeReader::load(const std::string& path) {
             }
             frames_ = binary.frames();
             path_ = path;
-            last_error_.clear();
+            recovered_truncated_tail_ =
+                binary.recovered_truncated_tail();
+            last_error_ = binary.last_error();
             return true;
         }
     }
@@ -206,6 +208,7 @@ void TakeReader::clear() {
     path_.clear();
     frames_.clear();
     last_error_.clear();
+    recovered_truncated_tail_ = false;
 }
 
 TimestampNs TakeReader::start_time_ns() const noexcept {

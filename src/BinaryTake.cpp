@@ -195,7 +195,9 @@ void BinaryTakeWriter::stop() {
     }
 }
 
-bool BinaryTakeReader::load(const std::string& path) {
+bool BinaryTakeReader::load(
+    const std::string& path,
+    bool recover_truncated_tail) {
     clear();
 
     std::ifstream input(path, std::ios::binary);
@@ -226,6 +228,18 @@ bool BinaryTakeReader::load(const std::string& path) {
         return false;
     }
 
+    auto recover_tail = [&](const std::string& message) -> bool {
+        if (recover_truncated_tail && !frames_.empty()) {
+            recovered_truncated_tail_ = true;
+            last_error_ = message;
+            path_ = path;
+            return true;
+        }
+        last_error_ = message;
+        clear();
+        return false;
+    };
+
     while (true) {
         std::uint32_t marker = 0;
         input.read(
@@ -234,9 +248,8 @@ bool BinaryTakeReader::load(const std::string& path) {
 
         if (input.eof()) break;
         if (!input || marker != kFrameMarker) {
-            last_error_ = "invalid or truncated frame marker";
-            clear();
-            return false;
+            return recover_tail(
+                "recovered take with truncated final frame marker");
         }
 
         FusedPerformanceFrame frame;
@@ -244,9 +257,8 @@ bool BinaryTakeReader::load(const std::string& path) {
         if (!read_raw(input, frame.timestamp_ns) ||
             !read_raw(input, sample_count) ||
             sample_count > kMaxSamples) {
-            last_error_ = "invalid or truncated frame header";
-            clear();
-            return false;
+            return recover_tail(
+                "recovered take with truncated final frame header");
         }
 
         frame.samples.reserve(sample_count);
@@ -264,9 +276,8 @@ bool BinaryTakeReader::load(const std::string& path) {
                 !read_string(input, source) ||
                 !read_raw(input, channel_count) ||
                 channel_count > kMaxChannels) {
-                last_error_ = "invalid or truncated sample";
-                clear();
-                return false;
+                return recover_tail(
+                    "recovered take with truncated final sample");
             }
 
             sample.channels.reserve(channel_count);
@@ -277,9 +288,8 @@ bool BinaryTakeReader::load(const std::string& path) {
                 float value = 0.0F;
                 if (!read_string(input, channel) ||
                     !read_raw(input, value)) {
-                    last_error_ = "invalid or truncated channel";
-                    clear();
-                    return false;
+                    return recover_tail(
+                        "recovered take with truncated final channel");
                 }
                 sample.channels.push_back(std::move(channel));
                 sample.values.push_back(value);
@@ -317,6 +327,7 @@ void BinaryTakeReader::clear() {
     path_.clear();
     frames_.clear();
     last_error_.clear();
+    recovered_truncated_tail_ = false;
 }
 
 TimestampNs BinaryTakeReader::start_time_ns() const noexcept {
