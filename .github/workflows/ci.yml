@@ -21,6 +21,9 @@ jobs:
       - name: Test EasyMocap worker supervisor
         if: runner.os == 'Linux'
         run: python3 adapters/easymocap_worker.py --self-test
+      - name: Synthetic sync and fusion benchmark
+        if: runner.os == 'Linux'
+        run: ./build/bdfrpc_benchmark 20000 4
 
   opencv-backend:
     runs-on: ubuntu-latest

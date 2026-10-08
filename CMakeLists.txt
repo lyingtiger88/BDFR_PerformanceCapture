@@ -88,6 +88,9 @@ if(BDFRPC_BUILD_TOOLS)
 
     add_executable(bdfrpc_export_bvh tools/bdfrpc_export_bvh.cpp)
     target_link_libraries(bdfrpc_export_bvh PRIVATE bdfrpc_core)
+
+    add_executable(bdfrpc_benchmark tools/bdfrpc_benchmark.cpp)
+    target_link_libraries(bdfrpc_benchmark PRIVATE bdfrpc_core)
 endif()
 
 if(BDFRPC_BUILD_TESTS)

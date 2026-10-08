@@ -676,6 +676,48 @@ int main() {
         std::filesystem::remove_all(dir);
     }
 
+    {
+        const std::string path = "bdfrpc_recovery_test.bdfrtake";
+
+        TakeRecorder writer;
+        assert(writer.start(path));
+
+        FusedPerformanceFrame first;
+        first.timestamp_ns = 50'000'000'000;
+        DomainSample face;
+        face.domain = Domain::Face;
+        face.confidence = 0.98f;
+        face.channels = {"jawOpen"};
+        face.values = {0.42f};
+        first.samples = {face};
+        first.selected_sources = {"bdfr_facial"};
+        assert(writer.append(first));
+
+        FusedPerformanceFrame second = first;
+        second.timestamp_ns = 50'033'333'333;
+        second.samples[0].values[0] = 0.73f;
+        assert(writer.append(second));
+        assert(writer.flush());
+        writer.stop();
+
+        const auto original_size =
+            std::filesystem::file_size(path);
+        assert(original_size > 12);
+        std::filesystem::resize_file(
+            path,
+            original_size - 7);
+
+        TakeReader recovered;
+        assert(recovered.load(path));
+        assert(recovered.recovered_truncated_tail());
+        assert(recovered.frames().size() == 1);
+        assert(
+            recovered.frames()[0].timestamp_ns ==
+            50'000'000'000);
+
+        std::remove(path.c_str());
+    }
+
     std::cout << "bdfrpc_core_tests: OK\n";
     return 0;
 }

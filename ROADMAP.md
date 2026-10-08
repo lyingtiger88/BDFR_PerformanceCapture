@@ -77,8 +77,10 @@
 ## M6 — Production hardening
 - [ ] shared-memory frame transport
 - [ ] zero-copy/GPU upload paths
-- [ ] long-session soak tests
-- [ ] latency benchmarks
+- [x] synthetic high-frame-count soak/throughput harness
+- [ ] real multi-hour camera/solver soak test
+- [x] synthetic Sync/Fusion processing benchmark
+- [ ] hardware end-to-end capture-to-output latency benchmark
 - [x] deterministic binary BDFR Take v1 + legacy CSV compatibility
 - [x] truncated-tail recovery for binary takes after interrupted writes
 - [ ] full application/session-state crash recovery
