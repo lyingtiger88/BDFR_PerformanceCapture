@@ -18,6 +18,9 @@ jobs:
         run: cmake --build build --config Release
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+      - name: Test EasyMocap worker supervisor
+        if: runner.os == 'Linux'
+        run: python3 adapters/easymocap_worker.py --self-test
 
   opencv-backend:
     runs-on: ubuntu-latest

@@ -46,7 +46,8 @@
 - [x] native receiver for EasyMocap BaseSocketClient.send_smpl()
 - [ ] automatic EasyMocap solver launch / live solve execution
 - [x] source health state / timeout / recovery monitor
-- [ ] active watchdog-driven process restart
+- [x] EasyMocap worker process supervisor with bounded watchdog restart
+- [ ] Studio UI for solver command/config launch
 
 ## M4 — Fusion and retarget
 - [x] remote-to-local clock offset estimation and outlier rejection
