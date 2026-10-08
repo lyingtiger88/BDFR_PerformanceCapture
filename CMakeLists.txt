@@ -29,6 +29,7 @@ add_library(bdfrpc_core
     src/Skeleton.cpp
     src/Retarget.cpp
     src/Kinematics.cpp
+    src/BvhExport.cpp
     src/BDFRFacialUdpSource.cpp
     src/EasyMocapTcpSource.cpp
 )
@@ -83,6 +84,9 @@ if(BDFRPC_BUILD_TOOLS)
 
     add_executable(bdfrpc_easymocap_probe tools/bdfrpc_easymocap_probe.cpp)
     target_link_libraries(bdfrpc_easymocap_probe PRIVATE bdfrpc_core)
+
+    add_executable(bdfrpc_export_bvh tools/bdfrpc_export_bvh.cpp)
+    target_link_libraries(bdfrpc_export_bvh PRIVATE bdfrpc_core)
 endif()
 
 if(BDFRPC_BUILD_TESTS)

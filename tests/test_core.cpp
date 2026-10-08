@@ -15,6 +15,7 @@
 #include "bdfrpc/Skeleton.h"
 #include "bdfrpc/Retarget.h"
 #include "bdfrpc/Kinematics.h"
+#include "bdfrpc/BvhExport.h"
 
 #include <cassert>
 #include <cmath>
@@ -588,6 +589,42 @@ int main() {
 
         std::remove(path_a.c_str());
         std::remove(path_b.c_str());
+    }
+
+    {
+        CaptureFrame source;
+        source.source_id = "easymocap";
+        source.stream_id = "easymocap_tcp";
+        source.timestamp_ns = 30'000'000'000;
+
+        DomainSample body;
+        body.domain = Domain::Body;
+        body.confidence = 1.0f;
+        add_group(body, 0, "Rh", 3, 0.0f);
+        add_group(body, 0, "Th", 3, 0.0f);
+        add_group(body, 0, "poses", 72, 0.0f);
+        source.samples = {body};
+
+        auto pose0 = EasyMocapSkeletonMapper::map_subject(source, 0);
+        assert(pose0.has_value());
+        auto pose1 = *pose0;
+        pose1.timestamp_ns = 30'033'333'333;
+        pose1.translation[0] = 0.05f;
+
+        const std::string path = "bdfrpc_export_test.bvh";
+        std::string error;
+        assert(export_bvh(path, {*pose0, pose1}, {}, &error));
+        assert(error.empty());
+
+        std::ifstream input(path);
+        const std::string content(
+            (std::istreambuf_iterator<char>(input)),
+            std::istreambuf_iterator<char>());
+        assert(content.find("HIERARCHY") != std::string::npos);
+        assert(content.find("MOTION") != std::string::npos);
+        assert(content.find("Frames: 2") != std::string::npos);
+        assert(content.find("JOINT left_wrist") != std::string::npos);
+        std::remove(path.c_str());
     }
 
     std::cout << "bdfrpc_core_tests: OK\n";

@@ -41,7 +41,9 @@ isolated so each upstream project retains its own dependency and license boundar
 - native TCP receiver compatible with EasyMocap `BaseSocketClient.send_smpl()`
 - canonical SMPL24 / compact SMPL-X 87 / expanded SMPL-X 165 skeleton parsing
 - UE Mannequin and MetaHuman body bone-name retarget profiles
-- fused take recording plus CSV take reader with random timestamp lookup
+- fused take recording plus CSV/binary take reader with random timestamp lookup
+- deterministic binary `.bdfrtake` format v1
+- Blender/Maya-compatible BVH export from recorded SMPL/SMPL-X takes
 - Windows/Linux CI plus OpenCV backend compile-check
 
 ## BDFR Performance Studio
@@ -104,3 +106,17 @@ See `ROADMAP.md`, `Docs/ARCHITECTURE.md`, `Docs/ADAPTERS.md` and
 
 BDFR PerformanceCapture's own project license has not yet been finalized.
 Third-party software, models and datasets remain subject to their own licenses.
+
+
+## Animation export
+
+Recorded body takes can be converted directly to BVH for Blender or Maya:
+
+```bash
+bdfrpc_export_bvh capture.bdfrtake output.bvh 0
+```
+
+The optional final argument can override frame rate. Without it, frame timing is
+inferred from take timestamps. Expanded SMPL-X 165 streams include finger joints;
+compact SMPL-X streams export the body/head hierarchy while preserving the hand
+PCA data in the take for later model-aware expansion.
