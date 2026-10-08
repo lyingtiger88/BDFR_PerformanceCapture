@@ -410,8 +410,8 @@ void PerformanceMainWindow::start_recording() {
     const auto path = QFileDialog::getSaveFileName(
         this,
         "Record Performance Take",
-        "capture.bdfrtake.csv",
-        "BDFR Performance Take (*.bdfrtake.csv);;CSV (*.csv)");
+        "capture.bdfrtake",
+        "BDFR Binary Take (*.bdfrtake);;Legacy CSV Take (*.bdfrtake.csv *.csv)");
     if (path.isEmpty()) return;
 
     if (!take_recorder_.start(path.toStdString())) {
@@ -441,7 +441,7 @@ void PerformanceMainWindow::open_take() {
         this,
         "Open Performance Take",
         QString(),
-        "BDFR Performance Take (*.bdfrtake.csv *.csv);;CSV (*.csv)");
+        "BDFR Performance Take (*.bdfrtake *.bdfrtake.csv *.csv)");
     if (path.isEmpty()) return;
 
     TakeReader reader;

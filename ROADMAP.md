@@ -76,6 +76,6 @@
 - [ ] zero-copy/GPU upload paths
 - [ ] long-session soak tests
 - [ ] latency benchmarks
-- [ ] deterministic recording format
+- [x] deterministic binary BDFR Take v1 + legacy CSV compatibility
 - [ ] crash recovery
 - [ ] signed Windows test builds

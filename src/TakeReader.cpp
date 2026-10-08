@@ -1,4 +1,5 @@
 #include "bdfrpc/TakeReader.h"
+#include "bdfrpc/BinaryTake.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -73,6 +74,29 @@ bool TakeReader::load(const std::string& path) {
     if (path.empty()) {
         last_error_ = "empty take path";
         return false;
+    }
+
+    {
+        std::ifstream probe(path, std::ios::binary);
+        if (!probe) {
+            last_error_ = "unable to open take";
+            return false;
+        }
+
+        char magic[8]{};
+        probe.read(magic, 8);
+        if (probe.gcount() == 8 &&
+            std::string(magic, magic + 8) == "BDFRTAKE") {
+            BinaryTakeReader binary;
+            if (!binary.load(path)) {
+                last_error_ = binary.last_error();
+                return false;
+            }
+            frames_ = binary.frames();
+            path_ = path;
+            last_error_.clear();
+            return true;
+        }
     }
 
     std::ifstream input(path);

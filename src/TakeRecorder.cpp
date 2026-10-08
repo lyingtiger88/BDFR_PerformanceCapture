@@ -1,4 +1,5 @@
 #include "bdfrpc/TakeRecorder.h"
+#include "bdfrpc/BinaryTake.h"
 
 #include <iomanip>
 #include <sstream>
@@ -30,16 +31,39 @@ bool TakeRecorder::start(const std::string& path) {
     stop();
     if (path.empty()) return false;
 
-    stream_.open(path, std::ios::out | std::ios::trunc);
-    if (!stream_) return false;
-
     path_ = path;
     frames_written_ = 0;
+    binary_format_ =
+        path.size() >= 9 &&
+        path.substr(path.size() - 9) == ".bdfrtake";
+
+    if (binary_format_) {
+        binary_ = std::make_unique<BinaryTakeWriter>();
+        if (!binary_->start(path)) {
+            binary_.reset();
+            binary_format_ = false;
+            path_.clear();
+            return false;
+        }
+        return true;
+    }
+
+    stream_.open(path, std::ios::out | std::ios::trunc);
+    if (!stream_) {
+        path_.clear();
+        return false;
+    }
+
     stream_ << "timestamp_ns,domain,source,confidence,channel,value\n";
     return static_cast<bool>(stream_);
 }
 
 bool TakeRecorder::append(const FusedPerformanceFrame& frame) {
+    if (binary_) return binary_->append(frame);
+    return append_csv(frame);
+}
+
+bool TakeRecorder::append_csv(const FusedPerformanceFrame& frame) {
     if (!stream_) return false;
 
     for (std::size_t sample_index = 0; sample_index < frame.samples.size(); ++sample_index) {
@@ -71,16 +95,34 @@ bool TakeRecorder::append(const FusedPerformanceFrame& frame) {
 }
 
 bool TakeRecorder::flush() {
+    if (binary_) return binary_->flush();
     if (!stream_) return false;
     stream_.flush();
     return static_cast<bool>(stream_);
 }
 
 void TakeRecorder::stop() {
+    if (binary_) {
+        binary_->stop();
+        binary_.reset();
+    }
     if (stream_.is_open()) {
         stream_.flush();
         stream_.close();
     }
+    binary_format_ = false;
+}
+
+bool TakeRecorder::recording() const noexcept {
+    return binary_
+        ? binary_->recording()
+        : stream_.is_open();
+}
+
+std::uint64_t TakeRecorder::frames_written() const noexcept {
+    return binary_
+        ? binary_->frames_written()
+        : frames_written_;
 }
 
 } // namespace bdfrpc

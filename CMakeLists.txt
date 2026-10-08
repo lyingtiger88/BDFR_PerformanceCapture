@@ -25,6 +25,7 @@ add_library(bdfrpc_core
     src/SourceHealth.cpp
     src/TakeRecorder.cpp
     src/TakeReader.cpp
+    src/BinaryTake.cpp
     src/Skeleton.cpp
     src/Retarget.cpp
     src/Kinematics.cpp

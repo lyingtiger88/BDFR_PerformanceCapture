@@ -11,6 +11,7 @@
 #include "bdfrpc/SourceHealth.h"
 #include "bdfrpc/TakeRecorder.h"
 #include "bdfrpc/TakeReader.h"
+#include "bdfrpc/BinaryTake.h"
 #include "bdfrpc/Skeleton.h"
 #include "bdfrpc/Retarget.h"
 #include "bdfrpc/Kinematics.h"
@@ -540,6 +541,50 @@ int main() {
         assert(reader.frames()[1].selected_sources[0] == "easymocap");
         assert(reader.lower_bound_index(10'020'000'000) == 1);
         std::remove(path.c_str());
+    }
+
+    {
+        const std::string path_a = "bdfrpc_binary_take_a.bdfrtake";
+        const std::string path_b = "bdfrpc_binary_take_b.bdfrtake";
+
+        FusedPerformanceFrame frame;
+        frame.timestamp_ns = 20'000'000'000;
+        DomainSample body;
+        body.domain = Domain::Body;
+        body.confidence = 0.92f;
+        body.channels = {"subject.0.poses.0", "subject.0.poses.1"};
+        body.values = {0.1f, -0.2f};
+        frame.samples = {body};
+        frame.selected_sources = {"easymocap"};
+
+        for (const auto& path : {path_a, path_b}) {
+            TakeRecorder writer;
+            assert(writer.start(path));
+            assert(writer.binary_format());
+            assert(writer.append(frame));
+            assert(writer.flush());
+            writer.stop();
+        }
+
+        std::ifstream a(path_a, std::ios::binary);
+        std::ifstream b(path_b, std::ios::binary);
+        const std::string bytes_a(
+            (std::istreambuf_iterator<char>(a)),
+            std::istreambuf_iterator<char>());
+        const std::string bytes_b(
+            (std::istreambuf_iterator<char>(b)),
+            std::istreambuf_iterator<char>());
+        assert(bytes_a == bytes_b);
+
+        TakeReader reader;
+        assert(reader.load(path_a));
+        assert(reader.frames().size() == 1);
+        assert(reader.frames()[0].selected_sources[0] == "easymocap");
+        assert(reader.frames()[0].samples[0].channels[1] == "subject.0.poses.1");
+        assert(std::abs(reader.frames()[0].samples[0].values[1] + 0.2f) < 1e-6f);
+
+        std::remove(path_a.c_str());
+        std::remove(path_b.c_str());
     }
 
     std::cout << "bdfrpc_core_tests: OK\n";
