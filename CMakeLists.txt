@@ -26,6 +26,7 @@ add_library(bdfrpc_core
     src/TakeRecorder.cpp
     src/TakeReader.cpp
     src/BinaryTake.cpp
+    src/TakeSessionIndex.cpp
     src/Skeleton.cpp
     src/Retarget.cpp
     src/Kinematics.cpp

@@ -70,7 +70,9 @@
 - [x] canonical forward-kinematics preview core
 - [ ] interactive 3D viewer UI
 - [x] fused take recording and CSV take reader core
-- [ ] Studio playback controls / session browser
+- [x] Studio take playback controls
+- [x] take session directory index core
+- [ ] Studio session browser dialog
 
 ## M6 — Production hardening
 - [ ] shared-memory frame transport

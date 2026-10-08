@@ -12,6 +12,7 @@
 #include "bdfrpc/TakeRecorder.h"
 #include "bdfrpc/TakeReader.h"
 #include "bdfrpc/BinaryTake.h"
+#include "bdfrpc/TakeSessionIndex.h"
 #include "bdfrpc/Skeleton.h"
 #include "bdfrpc/Retarget.h"
 #include "bdfrpc/Kinematics.h"
@@ -20,6 +21,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -625,6 +627,53 @@ int main() {
         assert(content.find("Frames: 2") != std::string::npos);
         assert(content.find("JOINT left_wrist") != std::string::npos);
         std::remove(path.c_str());
+    }
+
+    {
+        const std::filesystem::path dir =
+            "bdfrpc_session_index_test";
+        std::filesystem::remove_all(dir);
+        std::filesystem::create_directories(dir);
+
+        FusedPerformanceFrame frame;
+        frame.timestamp_ns = 40'000'000'000;
+        DomainSample face;
+        face.domain = Domain::Face;
+        face.confidence = 0.9f;
+        face.channels = {"jawOpen"};
+        face.values = {0.4f};
+        frame.samples = {face};
+        frame.selected_sources = {"bdfr_facial"};
+
+        {
+            TakeRecorder binary;
+            const auto path = (dir / "take01.bdfrtake").string();
+            assert(binary.start(path));
+            assert(binary.append(frame));
+            binary.stop();
+        }
+
+        {
+            TakeRecorder csv;
+            const auto path = (dir / "take02.bdfrtake.csv").string();
+            assert(csv.start(path));
+            assert(csv.append(frame));
+            csv.stop();
+        }
+
+        const auto sessions =
+            TakeSessionIndex::scan(dir.string());
+        assert(sessions.size() == 2);
+        assert(sessions[0].valid);
+        assert(sessions[1].valid);
+        assert(sessions[0].frame_count == 1);
+        assert(sessions[1].frame_count == 1);
+        assert(
+            sessions[0].format != TakeFileFormat::Unknown);
+        assert(
+            sessions[1].format != TakeFileFormat::Unknown);
+
+        std::filesystem::remove_all(dir);
     }
 
     std::cout << "bdfrpc_core_tests: OK\n";
