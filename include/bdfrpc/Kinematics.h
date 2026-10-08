@@ -21,6 +21,9 @@ struct KinematicPose {
     const KinematicJoint* find_joint(const std::string& name) const noexcept;
 };
 
+std::array<float, 3> canonical_rest_offset(
+    const std::string& joint_name);
+
 class SkeletonKinematics {
 public:
     // Produces a visualization/preview pose from canonical local rotations.

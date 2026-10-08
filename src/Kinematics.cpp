@@ -71,7 +71,7 @@ Mat3 axis_angle(const AxisAngle& a) {
     return r;
 }
 
-std::array<float, 3> rest_offset(const std::string& name) {
+std::array<float, 3> rest_offset_impl(const std::string& name) {
     static const std::unordered_map<std::string, std::array<float,3>> offsets = {
         {"pelvis", {0.0F, 0.0F, 0.0F}},
         {"left_hip", {-0.09F, -0.09F, 0.0F}},
@@ -119,6 +119,11 @@ std::array<float, 3> rest_offset(const std::string& name) {
 
 } // namespace
 
+std::array<float, 3> canonical_rest_offset(
+    const std::string& joint_name) {
+    return rest_offset_impl(joint_name);
+}
+
 const KinematicJoint* KinematicPose::find_joint(
     const std::string& name) const noexcept {
 
@@ -158,7 +163,7 @@ KinematicPose SkeletonKinematics::solve(const SkeletonPose& pose) {
                 multiply(root_rotation, local_rotation));
         } else {
             const auto parent = static_cast<std::size_t>(source.parent);
-            const auto offset = rest_offset(source.name);
+            const auto offset = canonical_rest_offset(source.name);
             const auto rotated_offset =
                 transform(global_rotations[parent], offset);
             joint.position =
