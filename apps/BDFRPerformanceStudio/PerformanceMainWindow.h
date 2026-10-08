@@ -32,6 +32,7 @@ class QWidget;
 
 namespace bdfrpc::studio {
 
+class CalibrationWizardDialog;
 class SkeletonViewportWidget;
 
 class PerformanceMainWindow final : public QMainWindow {
@@ -62,6 +63,7 @@ private:
     void open_take();
     bool load_take_path(const QString& path);
     void browse_sessions();
+    void open_calibration_wizard();
     void toggle_playback();
     void stop_playback();
     void seek_playback(int index);
@@ -100,6 +102,7 @@ private:
     QPushButton* stop_record_button_{nullptr};
     QPushButton* open_take_button_{nullptr};
     QPushButton* session_browser_button_{nullptr};
+    QPushButton* calibration_button_{nullptr};
     QPushButton* play_take_button_{nullptr};
     QPushButton* stop_take_button_{nullptr};
     QPushButton* export_bvh_button_{nullptr};

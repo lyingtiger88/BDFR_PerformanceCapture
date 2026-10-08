@@ -33,7 +33,7 @@
 - [x] live chessboard intrinsic-calibration tool
 - [x] synchronized chessboard multi-camera extrinsic rig calibration
 - [ ] ChArUco/AprilTag calibration workflow
-- [ ] calibration wizard UI
+- [x] calibration wizard UI for intrinsics and rig extrinsics
 
 ## M3 — Solver adapters
 - [x] buffered BDFR FacialAnimation adapter foundation

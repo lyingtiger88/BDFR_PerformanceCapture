@@ -1,5 +1,6 @@
 #include "PerformanceMainWindow.h"
 #include "SkeletonViewportWidget.h"
+#include "CalibrationWizardDialog.h"
 
 #include <QComboBox>
 #include <QDialog>
@@ -93,6 +94,9 @@ void PerformanceMainWindow::build_ui() {
     top->addWidget(scan_button_);
     top->addWidget(start_button_);
     top->addWidget(stop_button_);
+    calibration_button_ =
+        new QPushButton("Calibration", central_);
+    top->addWidget(calibration_button_);
     top->addSpacing(16);
     record_button_ = new QPushButton("Record Take", central_);
     stop_record_button_ = new QPushButton("Stop Recording", central_);
@@ -226,6 +230,9 @@ void PerformanceMainWindow::build_ui() {
     });
     connect(stop_button_, &QPushButton::clicked, this, [this] {
         stop_cameras();
+    });
+    connect(calibration_button_, &QPushButton::clicked, this, [this] {
+        open_calibration_wizard();
     });
     connect(record_button_, &QPushButton::clicked, this, [this] {
         start_recording();
@@ -576,6 +583,24 @@ bool PerformanceMainWindow::load_take_path(const QString& path) {
             .arg(static_cast<qulonglong>(take_reader_.frames().size())),
         4000);
     return true;
+}
+
+
+void PerformanceMainWindow::open_calibration_wizard() {
+    if (std::any_of(
+            cameras_.begin(),
+            cameras_.end(),
+            [](const CameraUi& camera) {
+                return camera.source && camera.source->running();
+            })) {
+        statusBar()->showMessage(
+            "Stop live camera capture before calibration",
+            4000);
+        return;
+    }
+
+    CalibrationWizardDialog dialog(this);
+    dialog.exec();
 }
 
 void PerformanceMainWindow::browse_sessions() {

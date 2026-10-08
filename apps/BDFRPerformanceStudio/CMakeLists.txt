@@ -8,6 +8,8 @@ qt_add_executable(BDFRPerformanceStudio
     PerformanceMainWindow.cpp
     SkeletonViewportWidget.h
     SkeletonViewportWidget.cpp
+    CalibrationWizardDialog.h
+    CalibrationWizardDialog.cpp
 )
 
 target_link_libraries(BDFRPerformanceStudio PRIVATE
@@ -22,6 +24,7 @@ target_include_directories(BDFRPerformanceStudio PRIVATE
 
 target_compile_definitions(BDFRPerformanceStudio PRIVATE
     BDFRPC_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    BDFRPC_BINARY_DIR="${CMAKE_BINARY_DIR}"
 )
 
 set_target_properties(BDFRPerformanceStudio PROPERTIES
