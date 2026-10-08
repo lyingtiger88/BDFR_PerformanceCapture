@@ -1,3 +1,7 @@
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include "bdfrpc/AdapterProtocol.h"
 #include "bdfrpc/BDFRFacialUdpSource.h"
 #include "bdfrpc/Calibration.h"
