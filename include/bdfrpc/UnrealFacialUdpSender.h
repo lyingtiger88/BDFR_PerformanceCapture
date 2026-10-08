@@ -15,6 +15,12 @@ struct UnrealFacialPacketOptions {
     std::uint32_t schema_version{1};
 };
 
+// Encodes the canonical inner BDFR facial frame v1. This is shared by the
+// legacy BDFP v1 packet and the BDFP v2 performance packet.
+std::vector<std::uint8_t> encode_unreal_facial_frame(
+    const FusedPerformanceFrame& frame,
+    std::uint32_t schema_version = 1);
+
 // Encodes the existing BDFR FacialAnimation BDFP v1 wire format used by the
 // Unreal plugin's UBDFRLiveReceiverComponent. Face/Head are taken from the
 // fused frame, preserving the current Unreal/LiveLink compatibility path.

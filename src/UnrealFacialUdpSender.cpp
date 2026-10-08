@@ -191,15 +191,12 @@ std::string socket_error() {
 
 } // namespace
 
-std::vector<std::uint8_t> encode_unreal_facial_packet(
+std::vector<std::uint8_t> encode_unreal_facial_frame(
     const FusedPerformanceFrame& fused,
-    const UnrealFacialPacketOptions& options) {
+    std::uint32_t schema_version) {
 
     const auto* face = find_sample(fused, Domain::Face);
-    if (!face ||
-        fused.timestamp_ns <= 0 ||
-        options.source_id.empty() ||
-        options.source_id.size() > kMaxSourceBytes) {
+    if (!face || fused.timestamp_ns <= 0) {
         return {};
     }
 
@@ -232,7 +229,7 @@ std::vector<std::uint8_t> encode_unreal_facial_packet(
 
     append_u32(inner, kFrameMagic);
     append_u16(inner, kFrameVersion);
-    append_u32(inner, options.schema_version);
+    append_u32(inner, schema_version);
     append_double(
         inner,
         static_cast<double>(fused.timestamp_ns) / 1.0e9);
@@ -260,9 +257,26 @@ std::vector<std::uint8_t> encode_unreal_facial_packet(
         append_float(inner, curve.value);
     }
 
-    if (inner.size() >
-        static_cast<std::size_t>(
-            std::numeric_limits<std::uint32_t>::max())) {
+    return inner;
+}
+
+std::vector<std::uint8_t> encode_unreal_facial_packet(
+    const FusedPerformanceFrame& fused,
+    const UnrealFacialPacketOptions& options) {
+
+    if (options.source_id.empty() ||
+        options.source_id.size() > kMaxSourceBytes) {
+        return {};
+    }
+
+    const auto inner =
+        encode_unreal_facial_frame(
+            fused,
+            options.schema_version);
+    if (inner.empty() ||
+        inner.size() >
+            static_cast<std::size_t>(
+                std::numeric_limits<std::uint32_t>::max())) {
         return {};
     }
 
