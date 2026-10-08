@@ -9,6 +9,7 @@
 #include "bdfrpc/TakeRecorder.h"
 #include "bdfrpc/TakeReader.h"
 #include "bdfrpc/Skeleton.h"
+#include "bdfrpc/BvhExport.h"
 
 #include <QMainWindow>
 
@@ -61,6 +62,7 @@ private:
     void seek_playback(int index);
     void update_playback();
     void display_fused_skeleton(const FusedPerformanceFrame& frame);
+    void export_current_take_bvh();
     void tick();
     void update_sync_status();
     void update_solver_status();
@@ -88,6 +90,7 @@ private:
     QPushButton* open_take_button_{nullptr};
     QPushButton* play_take_button_{nullptr};
     QPushButton* stop_take_button_{nullptr};
+    QPushButton* export_bvh_button_{nullptr};
     QSpinBox* facial_port_{nullptr};
     QSpinBox* easymocap_port_{nullptr};
     QLabel* capture_status_{nullptr};

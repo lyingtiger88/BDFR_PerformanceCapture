@@ -94,12 +94,15 @@ void PerformanceMainWindow::build_ui() {
     open_take_button_ = new QPushButton("Open Take", central_);
     play_take_button_ = new QPushButton("Play Take", central_);
     stop_take_button_ = new QPushButton("Stop Take", central_);
+    export_bvh_button_ = new QPushButton("Export BVH", central_);
     play_take_button_->setEnabled(false);
     stop_take_button_->setEnabled(false);
+    export_bvh_button_->setEnabled(false);
 
     top->addWidget(open_take_button_);
     top->addWidget(play_take_button_);
     top->addWidget(stop_take_button_);
+    top->addWidget(export_bvh_button_);
     top->addStretch(1);
     root->addLayout(top);
 
@@ -191,6 +194,9 @@ void PerformanceMainWindow::build_ui() {
     });
     connect(stop_take_button_, &QPushButton::clicked, this, [this] {
         stop_playback();
+    });
+    connect(export_bvh_button_, &QPushButton::clicked, this, [this] {
+        export_current_take_bvh();
     });
     connect(playback_slider_, &QSlider::valueChanged, this, [this](int value) {
         seek_playback(value);
@@ -469,6 +475,7 @@ void PerformanceMainWindow::open_take() {
     playback_slider_->setEnabled(true);
     play_take_button_->setEnabled(true);
     stop_take_button_->setEnabled(true);
+    export_bvh_button_->setEnabled(true);
     play_take_button_->setText("Play Take");
 
     if (const auto* frame = take_reader_.frame(0)) {
@@ -614,6 +621,46 @@ void PerformanceMainWindow::update_playback() {
             .arg(playback_index_ + 1)
             .arg(take_reader_.frames().size())
             .arg(seconds, 0, 'f', 2));
+}
+
+
+void PerformanceMainWindow::export_current_take_bvh() {
+    if (!take_reader_.loaded()) return;
+
+    const auto path = QFileDialog::getSaveFileName(
+        this,
+        "Export Take to BVH",
+        "capture.bvh",
+        "Biovision Hierarchy (*.bvh)");
+    if (path.isEmpty()) return;
+
+    const auto skeletons =
+        extract_skeleton_sequence(take_reader_.frames(), 0);
+
+    if (skeletons.empty()) {
+        statusBar()->showMessage(
+            "No EasyMocap subject 0 skeleton data found in take",
+            5000);
+        return;
+    }
+
+    std::string error;
+    if (!export_bvh(
+            path.toStdString(),
+            skeletons,
+            {},
+            &error)) {
+        statusBar()->showMessage(
+            QString("BVH export failed: %1")
+                .arg(QString::fromStdString(error)),
+            5000);
+        return;
+    }
+
+    statusBar()->showMessage(
+        QString("BVH exported · %1 frames")
+            .arg(skeletons.size()),
+        5000);
 }
 
 void PerformanceMainWindow::show_frame(
