@@ -21,7 +21,9 @@
 class QComboBox;
 class QGridLayout;
 class QLabel;
+class QLineEdit;
 class QPushButton;
+class QProcess;
 class QSpinBox;
 class QSlider;
 class QTimer;
@@ -63,6 +65,12 @@ private:
     void update_playback();
     void display_fused_skeleton(const FusedPerformanceFrame& frame);
     void export_current_take_bvh();
+    void browse_easymocap_directory();
+    bool ensure_easymocap_worker();
+    void launch_easymocap_solver();
+    void stop_easymocap_solver();
+    void shutdown_easymocap_worker();
+    void handle_easymocap_worker_output();
     void tick();
     void update_sync_status();
     void update_solver_status();
@@ -91,16 +99,23 @@ private:
     QPushButton* play_take_button_{nullptr};
     QPushButton* stop_take_button_{nullptr};
     QPushButton* export_bvh_button_{nullptr};
+    QPushButton* easymocap_browse_button_{nullptr};
+    QPushButton* easymocap_launch_button_{nullptr};
+    QPushButton* easymocap_stop_button_{nullptr};
     QSpinBox* facial_port_{nullptr};
     QSpinBox* easymocap_port_{nullptr};
+    QLineEdit* easymocap_cwd_{nullptr};
+    QLineEdit* easymocap_command_{nullptr};
     QLabel* capture_status_{nullptr};
     QLabel* sync_status_{nullptr};
     QLabel* solver_status_{nullptr};
     QLabel* fusion_status_{nullptr};
     QLabel* playback_status_{nullptr};
+    QLabel* easymocap_process_status_{nullptr};
     QSlider* playback_slider_{nullptr};
     SkeletonViewportWidget* skeleton_view_{nullptr};
     QTimer* timer_{nullptr};
+    QProcess* easymocap_worker_process_{nullptr};
 
     std::uint64_t synchronized_sets_{0};
     bool playback_mode_{false};

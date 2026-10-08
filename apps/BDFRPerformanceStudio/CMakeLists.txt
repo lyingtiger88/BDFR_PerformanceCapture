@@ -20,6 +20,10 @@ target_include_directories(BDFRPerformanceStudio PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
 
+target_compile_definitions(BDFRPerformanceStudio PRIVATE
+    BDFRPC_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
 set_target_properties(BDFRPerformanceStudio PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON

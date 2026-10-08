@@ -8,13 +8,19 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QImage>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPixmap>
+#include <QProcess>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSlider>
 #include <QSpinBox>
+#include <QStandardPaths>
 #include <QStatusBar>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -51,6 +57,7 @@ PerformanceMainWindow::PerformanceMainWindow() {
 PerformanceMainWindow::~PerformanceMainWindow() {
     timer_->stop();
     take_recorder_.stop();
+    shutdown_easymocap_worker();
     stop_solver_bridges();
     stop_cameras();
 }
@@ -130,6 +137,41 @@ void PerformanceMainWindow::build_ui() {
     bridge_row->addStretch(1);
     root->addWidget(bridges);
 
+    auto* process_box = new QGroupBox("EasyMocap Process", central_);
+    auto* process_row = new QHBoxLayout(process_box);
+
+    easymocap_cwd_ = new QLineEdit(process_box);
+    easymocap_cwd_->setPlaceholderText("EasyMocap repository / working directory");
+    easymocap_command_ = new QLineEdit(process_box);
+    easymocap_command_->setPlaceholderText(
+        "Solver command, e.g. python apps/demo/... <args>");
+
+    easymocap_browse_button_ =
+        new QPushButton("Browse", process_box);
+    easymocap_launch_button_ =
+        new QPushButton("Launch Solver", process_box);
+    easymocap_stop_button_ =
+        new QPushButton("Stop Solver", process_box);
+    easymocap_stop_button_->setEnabled(false);
+    easymocap_process_status_ =
+        new QLabel("Worker: stopped", process_box);
+
+    process_row->addWidget(
+        new QLabel("Working dir:", process_box));
+    process_row->addWidget(easymocap_cwd_, 2);
+    process_row->addWidget(easymocap_browse_button_);
+    process_row->addWidget(
+        new QLabel("Command:", process_box));
+    process_row->addWidget(easymocap_command_, 3);
+    process_row->addWidget(easymocap_launch_button_);
+    process_row->addWidget(easymocap_stop_button_);
+    process_row->addWidget(easymocap_process_status_);
+    root->addWidget(process_box);
+
+    easymocap_worker_process_ = new QProcess(this);
+    easymocap_worker_process_->setProcessChannelMode(
+        QProcess::SeparateChannels);
+
     capture_status_ = new QLabel("Cameras: stopped", central_);
     sync_status_ = new QLabel("Sync: no frame sets yet", central_);
     solver_status_ = new QLabel("Solvers: stopped", central_);
@@ -198,6 +240,41 @@ void PerformanceMainWindow::build_ui() {
     connect(export_bvh_button_, &QPushButton::clicked, this, [this] {
         export_current_take_bvh();
     });
+    connect(easymocap_browse_button_, &QPushButton::clicked, this, [this] {
+        browse_easymocap_directory();
+    });
+    connect(easymocap_launch_button_, &QPushButton::clicked, this, [this] {
+        launch_easymocap_solver();
+    });
+    connect(easymocap_stop_button_, &QPushButton::clicked, this, [this] {
+        stop_easymocap_solver();
+    });
+    connect(
+        easymocap_worker_process_,
+        &QProcess::readyReadStandardOutput,
+        this,
+        [this] { handle_easymocap_worker_output(); });
+    connect(
+        easymocap_worker_process_,
+        &QProcess::readyReadStandardError,
+        this,
+        [this] {
+            const auto text =
+                easymocap_worker_process_->readAllStandardError();
+            if (!text.isEmpty()) {
+                statusBar()->showMessage(
+                    QString::fromUtf8(text).trimmed(),
+                    2500);
+            }
+        });
+    connect(
+        easymocap_worker_process_,
+        &QProcess::finished,
+        this,
+        [this](int, QProcess::ExitStatus) {
+            easymocap_process_status_->setText("Worker: stopped");
+            easymocap_stop_button_->setEnabled(false);
+        });
     connect(playback_slider_, &QSlider::valueChanged, this, [this](int value) {
         seek_playback(value);
     });
@@ -623,6 +700,183 @@ void PerformanceMainWindow::update_playback() {
             .arg(seconds, 0, 'f', 2));
 }
 
+
+
+void PerformanceMainWindow::browse_easymocap_directory() {
+    const auto directory = QFileDialog::getExistingDirectory(
+        this,
+        "Select EasyMocap Working Directory",
+        easymocap_cwd_->text());
+    if (!directory.isEmpty()) {
+        easymocap_cwd_->setText(directory);
+    }
+}
+
+bool PerformanceMainWindow::ensure_easymocap_worker() {
+    if (!easymocap_worker_process_) return false;
+
+    if (easymocap_worker_process_->state() != QProcess::NotRunning) {
+        return true;
+    }
+
+#ifdef _WIN32
+    QString python = QStandardPaths::findExecutable("python");
+    if (python.isEmpty()) {
+        python = QStandardPaths::findExecutable("py");
+    }
+#else
+    QString python = QStandardPaths::findExecutable("python3");
+    if (python.isEmpty()) {
+        python = QStandardPaths::findExecutable("python");
+    }
+#endif
+
+    if (python.isEmpty()) {
+        statusBar()->showMessage(
+            "Python executable not found for EasyMocap worker",
+            5000);
+        return false;
+    }
+
+    const QString worker =
+        QString::fromUtf8(BDFRPC_SOURCE_DIR) +
+        "/adapters/easymocap_worker.py";
+
+    easymocap_worker_process_->setProgram(python);
+    easymocap_worker_process_->setArguments({worker});
+    easymocap_worker_process_->start();
+
+    if (!easymocap_worker_process_->waitForStarted(3000)) {
+        statusBar()->showMessage(
+            "Failed to start EasyMocap worker process",
+            5000);
+        return false;
+    }
+
+    easymocap_process_status_->setText("Worker: starting");
+    return true;
+}
+
+void PerformanceMainWindow::launch_easymocap_solver() {
+    const QString command = easymocap_command_->text().trimmed();
+    if (command.isEmpty()) {
+        statusBar()->showMessage(
+            "Enter an EasyMocap solver command first",
+            4000);
+        return;
+    }
+
+    const QString cwd = easymocap_cwd_->text().trimmed();
+    if (cwd.isEmpty()) {
+        statusBar()->showMessage(
+            "Select the EasyMocap working directory first",
+            4000);
+        return;
+    }
+
+    const QStringList parts = QProcess::splitCommand(command);
+    if (parts.isEmpty()) {
+        statusBar()->showMessage(
+            "Invalid EasyMocap solver command",
+            4000);
+        return;
+    }
+
+    if (!ensure_easymocap_worker()) return;
+
+    QJsonArray argv;
+    for (const auto& part : parts) argv.append(part);
+
+    QJsonObject request{
+        {"command", "launch"},
+        {"argv", argv},
+        {"cwd", cwd},
+        {"auto_restart", true},
+        {"max_restarts", 3},
+        {"restart_delay", 1.0}
+    };
+
+    const QByteArray line =
+        QJsonDocument(request).toJson(QJsonDocument::Compact) + "\n";
+    easymocap_worker_process_->write(line);
+    easymocap_worker_process_->waitForBytesWritten(1000);
+
+    easymocap_process_status_->setText("Solver: launching");
+    easymocap_stop_button_->setEnabled(true);
+}
+
+void PerformanceMainWindow::stop_easymocap_solver() {
+    if (!easymocap_worker_process_ ||
+        easymocap_worker_process_->state() == QProcess::NotRunning) {
+        return;
+    }
+
+    const QJsonObject request{{"command", "stop_solver"}};
+    easymocap_worker_process_->write(
+        QJsonDocument(request).toJson(QJsonDocument::Compact) + "\n");
+    easymocap_worker_process_->waitForBytesWritten(1000);
+}
+
+void PerformanceMainWindow::shutdown_easymocap_worker() {
+    if (!easymocap_worker_process_ ||
+        easymocap_worker_process_->state() == QProcess::NotRunning) {
+        return;
+    }
+
+    const QJsonObject request{{"command", "shutdown"}};
+    easymocap_worker_process_->write(
+        QJsonDocument(request).toJson(QJsonDocument::Compact) + "\n");
+    easymocap_worker_process_->waitForBytesWritten(500);
+
+    if (!easymocap_worker_process_->waitForFinished(1500)) {
+        easymocap_worker_process_->terminate();
+        if (!easymocap_worker_process_->waitForFinished(1000)) {
+            easymocap_worker_process_->kill();
+            easymocap_worker_process_->waitForFinished(1000);
+        }
+    }
+}
+
+void PerformanceMainWindow::handle_easymocap_worker_output() {
+    while (easymocap_worker_process_->canReadLine()) {
+        const QByteArray line =
+            easymocap_worker_process_->readLine().trimmed();
+        if (line.isEmpty()) continue;
+
+        QJsonParseError parse_error{};
+        const auto document =
+            QJsonDocument::fromJson(line, &parse_error);
+        if (parse_error.error != QJsonParseError::NoError ||
+            !document.isObject()) {
+            continue;
+        }
+
+        const auto object = document.object();
+        const auto solver = object.value("solver").toObject();
+        const bool running =
+            solver.value("running").toBool(false);
+        const int restarts =
+            solver.value("restarts").toInt(0);
+        const auto pid =
+            solver.value("pid").toVariant().toLongLong();
+
+        if (running) {
+            easymocap_process_status_->setText(
+                QString("Solver: PID %1 · restarts %2")
+                    .arg(pid)
+                    .arg(restarts));
+            easymocap_stop_button_->setEnabled(true);
+        } else {
+            const QString error =
+                solver.value("last_error").toString();
+            easymocap_process_status_->setText(
+                error.isEmpty()
+                    ? "Worker: ready"
+                    : QString("Worker: %1").arg(error));
+            easymocap_stop_button_->setEnabled(false);
+        }
+    }
+}
 
 void PerformanceMainWindow::export_current_take_bvh() {
     if (!take_reader_.loaded()) return;

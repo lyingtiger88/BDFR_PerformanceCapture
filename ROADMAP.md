@@ -47,7 +47,7 @@
 - [ ] automatic EasyMocap solver launch / live solve execution
 - [x] source health state / timeout / recovery monitor
 - [x] EasyMocap worker process supervisor with bounded watchdog restart
-- [ ] Studio UI for solver command/config launch
+- [x] Studio UI for EasyMocap command/config launch through worker supervisor
 
 ## M4 — Fusion and retarget
 - [x] remote-to-local clock offset estimation and outlier rejection
