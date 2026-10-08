@@ -6,6 +6,8 @@ qt_add_executable(BDFRPerformanceStudio
     main.cpp
     PerformanceMainWindow.h
     PerformanceMainWindow.cpp
+    SkeletonViewportWidget.h
+    SkeletonViewportWidget.cpp
 )
 
 target_link_libraries(BDFRPerformanceStudio PRIVATE

@@ -1,4 +1,5 @@
 #include "PerformanceMainWindow.h"
+#include "SkeletonViewportWidget.h"
 
 #include <QComboBox>
 #include <QFrame>
@@ -11,6 +12,8 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSignalBlocker>
+#include <QSlider>
 #include <QSpinBox>
 #include <QStatusBar>
 #include <QTimer>
@@ -86,6 +89,17 @@ void PerformanceMainWindow::build_ui() {
     stop_record_button_->setEnabled(false);
     top->addWidget(record_button_);
     top->addWidget(stop_record_button_);
+    top->addSpacing(16);
+
+    open_take_button_ = new QPushButton("Open Take", central_);
+    play_take_button_ = new QPushButton("Play Take", central_);
+    stop_take_button_ = new QPushButton("Stop Take", central_);
+    play_take_button_->setEnabled(false);
+    stop_take_button_->setEnabled(false);
+
+    top->addWidget(open_take_button_);
+    top->addWidget(play_take_button_);
+    top->addWidget(stop_take_button_);
     top->addStretch(1);
     root->addLayout(top);
 
@@ -125,6 +139,15 @@ void PerformanceMainWindow::build_ui() {
     telemetry->addWidget(fusion_status_, 1);
     root->addLayout(telemetry);
 
+    auto* playback_row = new QHBoxLayout();
+    playback_status_ = new QLabel("Take: none", central_);
+    playback_slider_ = new QSlider(Qt::Horizontal, central_);
+    playback_slider_->setRange(0, 0);
+    playback_slider_->setEnabled(false);
+    playback_row->addWidget(playback_status_);
+    playback_row->addWidget(playback_slider_, 1);
+    root->addLayout(playback_row);
+
     auto* scroll = new QScrollArea(central_);
     scroll->setWidgetResizable(true);
     auto* grid_host = new QWidget(scroll);
@@ -132,7 +155,12 @@ void PerformanceMainWindow::build_ui() {
     camera_grid_->setContentsMargins(6, 6, 6, 6);
     camera_grid_->setSpacing(10);
     scroll->setWidget(grid_host);
-    root->addWidget(scroll, 1);
+
+    auto* workspace = new QHBoxLayout();
+    workspace->addWidget(scroll, 3);
+    skeleton_view_ = new SkeletonViewportWidget(central_);
+    workspace->addWidget(skeleton_view_, 2);
+    root->addLayout(workspace, 1);
 
     setCentralWidget(central_);
     statusBar()->showMessage("Ready");
@@ -154,6 +182,18 @@ void PerformanceMainWindow::build_ui() {
     });
     connect(stop_record_button_, &QPushButton::clicked, this, [this] {
         stop_recording();
+    });
+    connect(open_take_button_, &QPushButton::clicked, this, [this] {
+        open_take();
+    });
+    connect(play_take_button_, &QPushButton::clicked, this, [this] {
+        toggle_playback();
+    });
+    connect(stop_take_button_, &QPushButton::clicked, this, [this] {
+        stop_playback();
+    });
+    connect(playback_slider_, &QSlider::valueChanged, this, [this](int value) {
+        seek_playback(value);
     });
     connect(solver_start_button_, &QPushButton::clicked, this, [this] {
         start_solver_bridges();
@@ -395,6 +435,187 @@ void PerformanceMainWindow::stop_recording() {
         5000);
 }
 
+
+void PerformanceMainWindow::open_take() {
+    const auto path = QFileDialog::getOpenFileName(
+        this,
+        "Open Performance Take",
+        QString(),
+        "BDFR Performance Take (*.bdfrtake.csv *.csv);;CSV (*.csv)");
+    if (path.isEmpty()) return;
+
+    TakeReader reader;
+    if (!reader.load(path.toStdString())) {
+        statusBar()->showMessage(
+            QString("Failed to open take: %1")
+                .arg(QString::fromStdString(reader.last_error())),
+            5000);
+        return;
+    }
+
+    take_reader_ = std::move(reader);
+    playback_mode_ = true;
+    playback_running_ = false;
+    playback_index_ = 0;
+
+    {
+        const QSignalBlocker blocker(playback_slider_);
+        playback_slider_->setRange(
+            0,
+            static_cast<int>(take_reader_.frames().size() - 1));
+        playback_slider_->setValue(0);
+    }
+
+    playback_slider_->setEnabled(true);
+    play_take_button_->setEnabled(true);
+    stop_take_button_->setEnabled(true);
+    play_take_button_->setText("Play Take");
+
+    if (const auto* frame = take_reader_.frame(0)) {
+        display_fused_skeleton(*frame);
+    }
+    update_playback();
+
+    statusBar()->showMessage(
+        QString("Take loaded · %1 fused frames")
+            .arg(take_reader_.frames().size()),
+        4000);
+}
+
+void PerformanceMainWindow::toggle_playback() {
+    if (!take_reader_.loaded()) return;
+
+    if (playback_running_) {
+        playback_running_ = false;
+        play_take_button_->setText("Play Take");
+        return;
+    }
+
+    if (playback_index_ >= take_reader_.frames().size() - 1) {
+        playback_index_ = 0;
+    }
+
+    const auto* frame = take_reader_.frame(playback_index_);
+    if (!frame) return;
+
+    playback_mode_ = true;
+    playback_running_ = true;
+    playback_wall_anchor_ns_ = now_ns();
+    playback_take_anchor_ns_ = frame->timestamp_ns;
+    play_take_button_->setText("Pause");
+}
+
+void PerformanceMainWindow::stop_playback() {
+    playback_running_ = false;
+    playback_mode_ = false;
+    playback_index_ = 0;
+    play_take_button_->setText("Play Take");
+
+    if (take_reader_.loaded()) {
+        const QSignalBlocker blocker(playback_slider_);
+        playback_slider_->setValue(0);
+        playback_status_->setText(
+            QString("Take loaded · %1 frames")
+                .arg(take_reader_.frames().size()));
+    }
+
+    if (skeleton_view_) skeleton_view_->clear_skeleton();
+}
+
+void PerformanceMainWindow::seek_playback(int index) {
+    if (!take_reader_.loaded() || index < 0) return;
+    const auto count = take_reader_.frames().size();
+    if (static_cast<std::size_t>(index) >= count) return;
+
+    playback_mode_ = true;
+    playback_index_ = static_cast<std::size_t>(index);
+
+    if (const auto* frame = take_reader_.frame(playback_index_)) {
+        display_fused_skeleton(*frame);
+        if (playback_running_) {
+            playback_wall_anchor_ns_ = now_ns();
+            playback_take_anchor_ns_ = frame->timestamp_ns;
+        }
+    }
+    update_playback();
+}
+
+void PerformanceMainWindow::display_fused_skeleton(
+    const FusedPerformanceFrame& fused) {
+
+    CaptureFrame frame;
+    frame.source_id = "take";
+    frame.stream_id = "take";
+    frame.timestamp_ns = fused.timestamp_ns;
+
+    for (const auto& sample : fused.samples) {
+        if (sample.domain == Domain::Body ||
+            sample.domain == Domain::Face) {
+            frame.samples.push_back(sample);
+        }
+    }
+
+    const auto ids = EasyMocapSkeletonMapper::subject_ids(frame);
+    if (ids.empty()) return;
+
+    const auto skeleton =
+        EasyMocapSkeletonMapper::map_subject(frame, ids.front());
+    if (skeleton && skeleton_view_) {
+        skeleton_view_->set_skeleton(*skeleton);
+    }
+}
+
+void PerformanceMainWindow::update_playback() {
+    if (!take_reader_.loaded()) return;
+
+    if (playback_running_) {
+        const TimestampNs target =
+            playback_take_anchor_ns_ +
+            (now_ns() - playback_wall_anchor_ns_);
+
+        if (target >= take_reader_.end_time_ns()) {
+            playback_index_ = take_reader_.frames().size() - 1;
+            playback_running_ = false;
+            play_take_button_->setText("Play Take");
+        } else {
+            auto index = take_reader_.lower_bound_index(target);
+            if (index >= take_reader_.frames().size()) {
+                index = take_reader_.frames().size() - 1;
+            } else if (
+                index > 0 &&
+                take_reader_.frames()[index].timestamp_ns > target) {
+                --index;
+            }
+            playback_index_ = index;
+        }
+
+        if (const auto* frame = take_reader_.frame(playback_index_)) {
+            display_fused_skeleton(*frame);
+            fusion_status_->setText(
+                QString("Playback: %1 domains")
+                    .arg(frame->samples.size()));
+        }
+    }
+
+    {
+        const QSignalBlocker blocker(playback_slider_);
+        playback_slider_->setValue(
+            static_cast<int>(playback_index_));
+    }
+
+    const auto* frame = take_reader_.frame(playback_index_);
+    const double seconds = frame
+        ? static_cast<double>(
+              frame->timestamp_ns - take_reader_.start_time_ns()) / 1.0e9
+        : 0.0;
+
+    playback_status_->setText(
+        QString("Take %1/%2 · %3 s")
+            .arg(playback_index_ + 1)
+            .arg(take_reader_.frames().size())
+            .arg(seconds, 0, 'f', 2));
+}
+
 void PerformanceMainWindow::show_frame(
     CameraUi& camera,
     const CaptureFrame& frame) {
@@ -451,6 +672,18 @@ void PerformanceMainWindow::tick() {
 
     if (easymocap_source_) {
         while (auto frame = easymocap_source_->poll()) {
+            if (!playback_mode_) {
+                const auto ids =
+                    EasyMocapSkeletonMapper::subject_ids(*frame);
+                if (!ids.empty()) {
+                    const auto skeleton =
+                        EasyMocapSkeletonMapper::map_subject(
+                            *frame, ids.front());
+                    if (skeleton && skeleton_view_) {
+                        skeleton_view_->set_skeleton(*skeleton);
+                    }
+                }
+            }
             fusion_runtime_.submit(std::move(*frame));
         }
     }
@@ -478,6 +711,10 @@ void PerformanceMainWindow::tick() {
             QString("Fusion: %1 domains · %2")
                 .arg(fused.samples.size())
                 .arg(QString::fromStdString(sources)));
+    }
+
+    if (playback_mode_) {
+        update_playback();
     }
 }
 

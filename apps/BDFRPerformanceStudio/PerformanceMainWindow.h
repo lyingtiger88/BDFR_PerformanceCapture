@@ -7,6 +7,8 @@
 #include "bdfrpc/OpenCVCameraSource.h"
 #include "bdfrpc/OpenCVDeviceEnumerator.h"
 #include "bdfrpc/TakeRecorder.h"
+#include "bdfrpc/TakeReader.h"
+#include "bdfrpc/Skeleton.h"
 
 #include <QMainWindow>
 
@@ -20,10 +22,13 @@ class QGridLayout;
 class QLabel;
 class QPushButton;
 class QSpinBox;
+class QSlider;
 class QTimer;
 class QWidget;
 
 namespace bdfrpc::studio {
+
+class SkeletonViewportWidget;
 
 class PerformanceMainWindow final : public QMainWindow {
 public:
@@ -50,6 +55,12 @@ private:
     void apply_mode(int index);
     void start_recording();
     void stop_recording();
+    void open_take();
+    void toggle_playback();
+    void stop_playback();
+    void seek_playback(int index);
+    void update_playback();
+    void display_fused_skeleton(const FusedPerformanceFrame& frame);
     void tick();
     void update_sync_status();
     void update_solver_status();
@@ -59,6 +70,7 @@ private:
     std::unique_ptr<FrameSynchronizer> synchronizer_;
     FusionRuntime fusion_runtime_{OperatingMode::Hybrid};
     TakeRecorder take_recorder_;
+    TakeReader take_reader_;
 
     std::unique_ptr<BDFRFacialUdpSource> facial_source_;
     std::unique_ptr<EasyMocapTcpSource> easymocap_source_;
@@ -73,15 +85,26 @@ private:
     QPushButton* solver_stop_button_{nullptr};
     QPushButton* record_button_{nullptr};
     QPushButton* stop_record_button_{nullptr};
+    QPushButton* open_take_button_{nullptr};
+    QPushButton* play_take_button_{nullptr};
+    QPushButton* stop_take_button_{nullptr};
     QSpinBox* facial_port_{nullptr};
     QSpinBox* easymocap_port_{nullptr};
     QLabel* capture_status_{nullptr};
     QLabel* sync_status_{nullptr};
     QLabel* solver_status_{nullptr};
     QLabel* fusion_status_{nullptr};
+    QLabel* playback_status_{nullptr};
+    QSlider* playback_slider_{nullptr};
+    SkeletonViewportWidget* skeleton_view_{nullptr};
     QTimer* timer_{nullptr};
 
     std::uint64_t synchronized_sets_{0};
+    bool playback_mode_{false};
+    bool playback_running_{false};
+    std::size_t playback_index_{0};
+    TimestampNs playback_wall_anchor_ns_{0};
+    TimestampNs playback_take_anchor_ns_{0};
 };
 
 } // namespace bdfrpc::studio
