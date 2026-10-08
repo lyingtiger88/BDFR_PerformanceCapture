@@ -59,6 +59,7 @@
 - [x] EasyMocap SMPL24 / SMPL-X 87 / SMPL-X 165 canonical mapping
 - [x] UE Mannequin / MetaHuman canonical bone-name mapping foundation
 - [x] Unreal BDFP v1 face/head/gaze output compatible with existing BDFR LiveLink plugin
+- [x] Studio Unreal UDP output controls and live stream telemetry
 - [x] configurable target-space joint/root basis correction engine
 - [ ] validated asset-specific MetaHuman rest-pose correction profile
 - [ ] Unreal body/hand LiveLink role extension

@@ -62,6 +62,7 @@ PerformanceMainWindow::~PerformanceMainWindow() {
     timer_->stop();
     take_recorder_.stop();
     shutdown_easymocap_worker();
+    stop_unreal_stream();
     stop_solver_bridges();
     stop_cameras();
 }
@@ -145,6 +146,31 @@ void PerformanceMainWindow::build_ui() {
     bridge_row->addWidget(solver_stop_button_);
     bridge_row->addStretch(1);
     root->addWidget(bridges);
+
+    auto* unreal_box = new QGroupBox("Unreal / LiveLink Output", central_);
+    auto* unreal_row = new QHBoxLayout(unreal_box);
+
+    unreal_host_ = new QLineEdit("127.0.0.1", unreal_box);
+    unreal_port_ = new QSpinBox(unreal_box);
+    unreal_port_->setRange(1, 65535);
+    unreal_port_->setValue(5000);
+
+    unreal_start_button_ =
+        new QPushButton("Start Unreal Stream", unreal_box);
+    unreal_stop_button_ =
+        new QPushButton("Stop Unreal Stream", unreal_box);
+    unreal_stop_button_->setEnabled(false);
+    unreal_status_ = new QLabel("Unreal: stopped", unreal_box);
+
+    unreal_row->addWidget(new QLabel("Host:", unreal_box));
+    unreal_row->addWidget(unreal_host_);
+    unreal_row->addWidget(new QLabel("Port:", unreal_box));
+    unreal_row->addWidget(unreal_port_);
+    unreal_row->addWidget(unreal_start_button_);
+    unreal_row->addWidget(unreal_stop_button_);
+    unreal_row->addWidget(unreal_status_);
+    unreal_row->addStretch(1);
+    root->addWidget(unreal_box);
 
     auto* process_box = new QGroupBox("EasyMocap Process", central_);
     auto* process_row = new QHBoxLayout(process_box);
@@ -298,6 +324,12 @@ void PerformanceMainWindow::build_ui() {
     });
     connect(solver_stop_button_, &QPushButton::clicked, this, [this] {
         stop_solver_bridges();
+    });
+    connect(unreal_start_button_, &QPushButton::clicked, this, [this] {
+        start_unreal_stream();
+    });
+    connect(unreal_stop_button_, &QPushButton::clicked, this, [this] {
+        stop_unreal_stream();
     });
     connect(mode_combo_, &QComboBox::currentIndexChanged, this, [this](int index) {
         apply_mode(index);
@@ -495,6 +527,63 @@ void PerformanceMainWindow::stop_solver_bridges() {
     if (solver_start_button_) solver_start_button_->setEnabled(true);
     if (solver_stop_button_) solver_stop_button_->setEnabled(false);
     if (solver_status_) solver_status_->setText("Solvers: stopped");
+}
+
+
+void PerformanceMainWindow::start_unreal_stream() {
+    stop_unreal_stream();
+
+    const auto host =
+        unreal_host_->text().trimmed();
+    if (host.isEmpty()) {
+        statusBar()->showMessage(
+            "Enter the Unreal receiver IPv4 address",
+            4000);
+        return;
+    }
+
+    UnrealFacialUdpConfig config;
+    config.host = host.toStdString();
+    config.port =
+        static_cast<std::uint16_t>(unreal_port_->value());
+    config.source_id = "bdfr_performance";
+
+    auto sender =
+        std::make_unique<UnrealFacialUdpSender>(config);
+
+    if (!sender->start()) {
+        statusBar()->showMessage(
+            QString("Unreal stream failed: %1")
+                .arg(QString::fromStdString(sender->last_error())),
+            5000);
+        unreal_status_->setText("Unreal: start failed");
+        return;
+    }
+
+    unreal_sender_ = std::move(sender);
+    unreal_start_button_->setEnabled(false);
+    unreal_stop_button_->setEnabled(true);
+    unreal_status_->setText(
+        QString("Unreal: streaming to %1:%2")
+            .arg(host)
+            .arg(unreal_port_->value()));
+}
+
+void PerformanceMainWindow::stop_unreal_stream() {
+    if (unreal_sender_) {
+        unreal_sender_->stop();
+        unreal_sender_.reset();
+    }
+
+    if (unreal_start_button_) {
+        unreal_start_button_->setEnabled(true);
+    }
+    if (unreal_stop_button_) {
+        unreal_stop_button_->setEnabled(false);
+    }
+    if (unreal_status_) {
+        unreal_status_->setText("Unreal: stopped");
+    }
 }
 
 void PerformanceMainWindow::apply_mode(int index) {
@@ -1152,6 +1241,21 @@ void PerformanceMainWindow::tick() {
             QString("Fusion: %1 domains · %2")
                 .arg(fused.samples.size())
                 .arg(QString::fromStdString(sources)));
+
+        if (unreal_sender_ && !playback_mode_) {
+            if (!unreal_sender_->send(fused)) {
+                unreal_status_->setText(
+                    QString("Unreal error · %1")
+                        .arg(QString::fromStdString(
+                            unreal_sender_->last_error())));
+            } else {
+                const auto& stats = unreal_sender_->stats();
+                unreal_status_->setText(
+                    QString("Unreal: %1 frames · %2 bytes")
+                        .arg(static_cast<qulonglong>(stats.frames_sent))
+                        .arg(static_cast<qulonglong>(stats.bytes_sent)));
+            }
+        }
     }
 
     if (playback_mode_) {

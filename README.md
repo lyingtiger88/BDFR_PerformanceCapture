@@ -59,6 +59,7 @@ fusion core rather than mock controls:
 - BDFR FacialAnimation UDP bridge controls
 - EasyMocap TCP bridge controls
 - live solver health and fused-domain/source status
+- Unreal / LiveLink output using the existing BDFR FacialAnimation BDFP v1 receiver
 
 Build it with:
 
@@ -120,3 +121,16 @@ The optional final argument can override frame rate. Without it, frame timing is
 inferred from take timestamps. Expanded SMPL-X 165 streams include finger joints;
 compact SMPL-X streams export the body/head hierarchy while preserving the hand
 PCA data in the take for later model-aware expansion.
+
+
+## Unreal / MetaHuman face streaming
+
+BDFR PerformanceCapture reuses the existing `BDFR_FacialAnimation` Unreal
+plugin wire protocol instead of introducing a second facial transport. Start
+the plugin's `UBDFRLiveReceiverComponent` (default UDP port 5000), then enable
+**Unreal Stream** in Performance Studio. Fused Face, Head and Gaze data are
+encoded as BDFP v1 and published through the plugin's existing Live Link Basic
+Role path.
+
+Body/hand Live Link streaming remains a separate extension because it requires
+an animation-role skeleton/static-data contract rather than facial curve data.

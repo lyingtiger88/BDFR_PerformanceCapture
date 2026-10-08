@@ -10,6 +10,7 @@
 #include "bdfrpc/TakeReader.h"
 #include "bdfrpc/Skeleton.h"
 #include "bdfrpc/BvhExport.h"
+#include "bdfrpc/UnrealFacialUdpSender.h"
 #include "bdfrpc/TakeSessionIndex.h"
 
 #include <QMainWindow>
@@ -57,6 +58,8 @@ private:
     void stop_cameras();
     void start_solver_bridges();
     void stop_solver_bridges();
+    void start_unreal_stream();
+    void stop_unreal_stream();
     void apply_mode(int index);
     void start_recording();
     void stop_recording();
@@ -89,6 +92,7 @@ private:
 
     std::unique_ptr<BDFRFacialUdpSource> facial_source_;
     std::unique_ptr<EasyMocapTcpSource> easymocap_source_;
+    std::unique_ptr<UnrealFacialUdpSender> unreal_sender_;
 
     QWidget* central_{nullptr};
     QGridLayout* camera_grid_{nullptr};
@@ -98,6 +102,8 @@ private:
     QPushButton* stop_button_{nullptr};
     QPushButton* solver_start_button_{nullptr};
     QPushButton* solver_stop_button_{nullptr};
+    QPushButton* unreal_start_button_{nullptr};
+    QPushButton* unreal_stop_button_{nullptr};
     QPushButton* record_button_{nullptr};
     QPushButton* stop_record_button_{nullptr};
     QPushButton* open_take_button_{nullptr};
@@ -111,11 +117,14 @@ private:
     QPushButton* easymocap_stop_button_{nullptr};
     QSpinBox* facial_port_{nullptr};
     QSpinBox* easymocap_port_{nullptr};
+    QSpinBox* unreal_port_{nullptr};
+    QLineEdit* unreal_host_{nullptr};
     QLineEdit* easymocap_cwd_{nullptr};
     QLineEdit* easymocap_command_{nullptr};
     QLabel* capture_status_{nullptr};
     QLabel* sync_status_{nullptr};
     QLabel* solver_status_{nullptr};
+    QLabel* unreal_status_{nullptr};
     QLabel* fusion_status_{nullptr};
     QLabel* playback_status_{nullptr};
     QLabel* easymocap_process_status_{nullptr};
