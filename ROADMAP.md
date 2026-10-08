@@ -72,7 +72,7 @@
 - [x] fused take recording and CSV take reader core
 - [x] Studio take playback controls
 - [x] take session directory index core
-- [ ] Studio session browser dialog
+- [x] Studio session browser dialog
 
 ## M6 — Production hardening
 - [ ] shared-memory frame transport

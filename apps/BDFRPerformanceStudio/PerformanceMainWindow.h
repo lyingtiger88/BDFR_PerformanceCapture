@@ -10,6 +10,7 @@
 #include "bdfrpc/TakeReader.h"
 #include "bdfrpc/Skeleton.h"
 #include "bdfrpc/BvhExport.h"
+#include "bdfrpc/TakeSessionIndex.h"
 
 #include <QMainWindow>
 
@@ -59,6 +60,8 @@ private:
     void start_recording();
     void stop_recording();
     void open_take();
+    bool load_take_path(const QString& path);
+    void browse_sessions();
     void toggle_playback();
     void stop_playback();
     void seek_playback(int index);
@@ -96,6 +99,7 @@ private:
     QPushButton* record_button_{nullptr};
     QPushButton* stop_record_button_{nullptr};
     QPushButton* open_take_button_{nullptr};
+    QPushButton* session_browser_button_{nullptr};
     QPushButton* play_take_button_{nullptr};
     QPushButton* stop_take_button_{nullptr};
     QPushButton* export_bvh_button_{nullptr};

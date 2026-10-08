@@ -2,6 +2,8 @@
 #include "SkeletonViewportWidget.h"
 
 #include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFrame>
 #include <QFileDialog>
 #include <QGridLayout>
@@ -12,6 +14,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QListWidget>
 #include <QLineEdit>
 #include <QPixmap>
 #include <QProcess>
@@ -99,6 +102,7 @@ void PerformanceMainWindow::build_ui() {
     top->addSpacing(16);
 
     open_take_button_ = new QPushButton("Open Take", central_);
+    session_browser_button_ = new QPushButton("Sessions", central_);
     play_take_button_ = new QPushButton("Play Take", central_);
     stop_take_button_ = new QPushButton("Stop Take", central_);
     export_bvh_button_ = new QPushButton("Export BVH", central_);
@@ -107,6 +111,7 @@ void PerformanceMainWindow::build_ui() {
     export_bvh_button_->setEnabled(false);
 
     top->addWidget(open_take_button_);
+    top->addWidget(session_browser_button_);
     top->addWidget(play_take_button_);
     top->addWidget(stop_take_button_);
     top->addWidget(export_bvh_button_);
@@ -230,6 +235,9 @@ void PerformanceMainWindow::build_ui() {
     });
     connect(open_take_button_, &QPushButton::clicked, this, [this] {
         open_take();
+    });
+    connect(session_browser_button_, &QPushButton::clicked, this, [this] {
+        browse_sessions();
     });
     connect(play_take_button_, &QPushButton::clicked, this, [this] {
         toggle_playback();
@@ -526,14 +534,17 @@ void PerformanceMainWindow::open_take() {
         QString(),
         "BDFR Performance Take (*.bdfrtake *.bdfrtake.csv *.csv)");
     if (path.isEmpty()) return;
+    load_take_path(path);
+}
 
+bool PerformanceMainWindow::load_take_path(const QString& path) {
     TakeReader reader;
     if (!reader.load(path.toStdString())) {
         statusBar()->showMessage(
             QString("Failed to open take: %1")
                 .arg(QString::fromStdString(reader.last_error())),
             5000);
-        return;
+        return false;
     }
 
     take_reader_ = std::move(reader);
@@ -562,8 +573,112 @@ void PerformanceMainWindow::open_take() {
 
     statusBar()->showMessage(
         QString("Take loaded · %1 fused frames")
-            .arg(take_reader_.frames().size()),
+            .arg(static_cast<qulonglong>(take_reader_.frames().size())),
         4000);
+    return true;
+}
+
+void PerformanceMainWindow::browse_sessions() {
+    const auto directory = QFileDialog::getExistingDirectory(
+        this,
+        "Browse BDFR Take Sessions");
+    if (directory.isEmpty()) return;
+
+    const auto sessions =
+        TakeSessionIndex::scan(directory.toStdString(), true);
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("BDFR Session Browser");
+    dialog.resize(760, 460);
+
+    auto* layout = new QVBoxLayout(&dialog);
+    auto* list = new QListWidget(&dialog);
+
+    for (const auto& session : sessions) {
+        const double seconds =
+            static_cast<double>(session.duration_ns) / 1.0e9;
+
+        const QString line = session.valid
+            ? QString("%1   ·   %2   ·   %3 frames   ·   %4 s")
+                  .arg(QString::fromStdString(session.filename))
+                  .arg(TakeSessionIndex::format_name(session.format))
+                  .arg(static_cast<qulonglong>(session.frame_count))
+                  .arg(seconds, 0, 'f', 2)
+            : QString("%1   ·   INVALID   ·   %2")
+                  .arg(QString::fromStdString(session.filename))
+                  .arg(QString::fromStdString(session.error));
+
+        auto* item = new QListWidgetItem(line, list);
+        item->setData(
+            Qt::UserRole,
+            QString::fromStdString(session.path));
+        item->setData(
+            Qt::UserRole + 1,
+            session.valid);
+        if (!session.valid) {
+            item->setFlags(
+                item->flags() & ~Qt::ItemIsEnabled);
+        }
+    }
+
+    if (sessions.empty()) {
+        auto* item = new QListWidgetItem(
+            "No .bdfrtake or CSV sessions found in this folder.",
+            list);
+        item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
+    }
+
+    layout->addWidget(list, 1);
+
+    auto* buttons = new QDialogButtonBox(
+        QDialogButtonBox::Open | QDialogButtonBox::Cancel,
+        &dialog);
+    auto* open_button = buttons->button(QDialogButtonBox::Open);
+    open_button->setEnabled(false);
+    layout->addWidget(buttons);
+
+    connect(
+        list,
+        &QListWidget::currentItemChanged,
+        &dialog,
+        [open_button](QListWidgetItem* current, QListWidgetItem*) {
+            open_button->setEnabled(
+                current &&
+                current->data(Qt::UserRole + 1).toBool());
+        });
+
+    connect(
+        list,
+        &QListWidget::itemDoubleClicked,
+        &dialog,
+        [&dialog](QListWidgetItem* item) {
+            if (item &&
+                item->data(Qt::UserRole + 1).toBool()) {
+                dialog.accept();
+            }
+        });
+
+    connect(
+        buttons,
+        &QDialogButtonBox::accepted,
+        &dialog,
+        &QDialog::accept);
+    connect(
+        buttons,
+        &QDialogButtonBox::rejected,
+        &dialog,
+        &QDialog::reject);
+
+    if (dialog.exec() != QDialog::Accepted) return;
+
+    const auto* item = list->currentItem();
+    if (!item) return;
+
+    const QString path =
+        item->data(Qt::UserRole).toString();
+    if (!path.isEmpty()) {
+        load_take_path(path);
+    }
 }
 
 void PerformanceMainWindow::toggle_playback() {
