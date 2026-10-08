@@ -27,6 +27,7 @@ add_library(bdfrpc_core
     src/TakeReader.cpp
     src/Skeleton.cpp
     src/Retarget.cpp
+    src/Kinematics.cpp
     src/BDFRFacialUdpSource.cpp
     src/EasyMocapTcpSource.cpp
 )

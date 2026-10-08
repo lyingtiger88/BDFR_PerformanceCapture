@@ -13,6 +13,7 @@
 #include "bdfrpc/TakeReader.h"
 #include "bdfrpc/Skeleton.h"
 #include "bdfrpc/Retarget.h"
+#include "bdfrpc/Kinematics.h"
 
 #include <cassert>
 #include <cmath>
@@ -469,6 +470,14 @@ int main() {
         assert(retargeted.profile_name == "MetaHuman Body");
         assert(!retargeted.bones.empty());
         assert(retargeted.bones.front().bone == "pelvis");
+
+        const auto preview = SkeletonKinematics::solve(*mapped);
+        assert(preview.joints.size() == mapped->joints.size());
+        const auto* left_knee = preview.find_joint("left_knee");
+        const auto* left_ankle = preview.find_joint("left_ankle");
+        assert(left_knee != nullptr);
+        assert(left_ankle != nullptr);
+        assert(left_ankle->position[1] < left_knee->position[1]);
     }
 
     {

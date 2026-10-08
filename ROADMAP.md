@@ -66,7 +66,8 @@
 - [x] live sync/skew/drop status
 - [ ] calibration wizard
 - [x] Face Only / Body Only / Hybrid mode control and live bridge status
-- [ ] 3D viewer
+- [x] canonical forward-kinematics preview core
+- [ ] interactive 3D viewer UI
 - [x] fused take recording and CSV take reader core
 - [ ] Studio playback controls / session browser
 
