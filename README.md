@@ -39,6 +39,9 @@ isolated so each upstream project retains its own dependency and license boundar
 - Face Only / Body Only / Hybrid routing policies
 - versioned EasyMocap JSON-lines worker bootstrap
 - native TCP receiver compatible with EasyMocap `BaseSocketClient.send_smpl()`
+- canonical SMPL24 / compact SMPL-X 87 / expanded SMPL-X 165 skeleton parsing
+- UE Mannequin and MetaHuman body bone-name retarget profiles
+- fused take recording plus CSV take reader with random timestamp lookup
 - Windows/Linux CI plus OpenCV backend compile-check
 
 ## BDFR Performance Studio

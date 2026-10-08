@@ -10,6 +10,9 @@
 #include "bdfrpc/SolverAdapters.h"
 #include "bdfrpc/SourceHealth.h"
 #include "bdfrpc/TakeRecorder.h"
+#include "bdfrpc/TakeReader.h"
+#include "bdfrpc/Skeleton.h"
+#include "bdfrpc/Retarget.h"
 
 #include <cassert>
 #include <cmath>
@@ -24,6 +27,21 @@ using namespace bdfrpc;
 
 static DomainSample sample(Domain domain, float confidence, float value) {
     return {domain, confidence, {value}};
+}
+
+static void add_group(
+    DomainSample& sample,
+    int subject,
+    const std::string& group,
+    std::size_t count,
+    float start = 0.0f) {
+
+    for (std::size_t i = 0; i < count; ++i) {
+        sample.channels.push_back(
+            "subject." + std::to_string(subject) + "." +
+            group + "." + std::to_string(i));
+        sample.values.push_back(start + static_cast<float>(i));
+    }
 }
 
 static void append_u16(std::vector<std::uint8_t>& out, std::uint16_t value) {
@@ -406,6 +424,112 @@ int main() {
             std::istreambuf_iterator<char>());
         assert(content.find("timestamp_ns,domain,source,confidence,channel,value") != std::string::npos);
         assert(content.find("jawOpen") != std::string::npos);
+        std::remove(path.c_str());
+    }
+
+    {
+        CaptureFrame smplx;
+        smplx.source_id = "easymocap";
+        smplx.stream_id = "easymocap_tcp";
+        smplx.sequence = 100;
+        smplx.timestamp_ns = 5'000'000'000;
+
+        DomainSample body;
+        body.domain = Domain::Body;
+        body.confidence = 0.93f;
+        add_group(body, 7, "Rh", 3, 0.1f);
+        add_group(body, 7, "Th", 3, 1.0f);
+        add_group(body, 7, "poses", 87, 0.01f);
+        add_group(body, 7, "shapes", 10, 0.2f);
+
+        DomainSample face;
+        face.domain = Domain::Face;
+        face.confidence = 0.88f;
+        add_group(face, 7, "expression", 10, 0.3f);
+
+        smplx.samples = {body, face};
+
+        const auto ids = EasyMocapSkeletonMapper::subject_ids(smplx);
+        assert(ids.size() == 1 && ids[0] == 7);
+
+        const auto mapped = EasyMocapSkeletonMapper::map_subject(smplx, 7);
+        assert(mapped.has_value());
+        assert(mapped->model == SkeletonModel::SMPLXCompact87);
+        assert(mapped->joints.size() == 25);
+        assert(mapped->left_hand_pca.size() == 6);
+        assert(mapped->right_hand_pca.size() == 6);
+        assert(mapped->shape.size() == 10);
+        assert(mapped->expression.size() == 10);
+        assert(mapped->find_joint("pelvis") != nullptr);
+        assert(mapped->find_joint("jaw") != nullptr);
+        assert(std::abs(mapped->translation[0] - 1.0f) < 1e-6f);
+
+        const auto meta = RetargetProfile::metahuman_body();
+        const auto retargeted = retarget_skeleton(*mapped, meta);
+        assert(retargeted.profile_name == "MetaHuman Body");
+        assert(!retargeted.bones.empty());
+        assert(retargeted.bones.front().bone == "pelvis");
+    }
+
+    {
+        CaptureFrame full;
+        full.source_id = "easymocap";
+        full.stream_id = "easymocap_tcp";
+        full.sequence = 101;
+        full.timestamp_ns = 5'100'000'000;
+
+        DomainSample body;
+        body.domain = Domain::Body;
+        body.confidence = 0.95f;
+        add_group(body, 8, "Rh", 3);
+        add_group(body, 8, "Th", 3);
+        add_group(body, 8, "poses", 165);
+        full.samples = {body};
+
+        const auto mapped = EasyMocapSkeletonMapper::map_subject(full, 8);
+        assert(mapped.has_value());
+        assert(mapped->model == SkeletonModel::SMPLXFull55);
+        assert(mapped->joints.size() == 55);
+        assert(mapped->find_joint("left_index1") != nullptr);
+        assert(mapped->find_joint("right_thumb3") != nullptr);
+    }
+
+    {
+        const std::string path = "bdfrpc_take_reader_test.csv";
+        TakeRecorder recorder;
+        assert(recorder.start(path));
+
+        FusedPerformanceFrame f0;
+        f0.timestamp_ns = 10'000'000'000;
+        DomainSample face0;
+        face0.domain = Domain::Face;
+        face0.confidence = 0.97f;
+        face0.channels = {"jawOpen", "brow,Inner"};
+        face0.values = {0.5f, 0.25f};
+        f0.samples = {face0};
+        f0.selected_sources = {"bdfr_facial"};
+        assert(recorder.append(f0));
+
+        FusedPerformanceFrame f1;
+        f1.timestamp_ns = 10'033'333'333;
+        DomainSample body1;
+        body1.domain = Domain::Body;
+        body1.confidence = 0.91f;
+        body1.channels = {"pelvis.yaw"};
+        body1.values = {0.12f};
+        f1.samples = {body1};
+        f1.selected_sources = {"easymocap"};
+        assert(recorder.append(f1));
+        assert(recorder.flush());
+        recorder.stop();
+
+        TakeReader reader;
+        assert(reader.load(path));
+        assert(reader.frames().size() == 2);
+        assert(reader.duration_ns() == 33'333'333);
+        assert(reader.frames()[0].samples[0].channels[1] == "brow,Inner");
+        assert(reader.frames()[1].selected_sources[0] == "easymocap");
+        assert(reader.lower_bound_index(10'020'000'000) == 1);
         std::remove(path.c_str());
     }
 

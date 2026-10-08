@@ -54,9 +54,10 @@
 - [x] named semantic channels preserved through fusion
 - [x] asynchronous latest-frame solver cache
 - [x] runtime Face/Body/Hybrid failover without lockstep solver timestamps
-- [ ] skeletal schema
-- [ ] SMPL-X mapping
-- [ ] UE/MetaHuman mapping
+- [x] canonical skeletal schema
+- [x] EasyMocap SMPL24 / SMPL-X 87 / SMPL-X 165 canonical mapping
+- [x] UE Mannequin / MetaHuman canonical bone-name mapping foundation
+- [ ] target-space rest-pose/orientation retarget solve
 - [ ] Blender/Maya export bridge
 
 ## M5 — Studio UI
@@ -66,7 +67,8 @@
 - [ ] calibration wizard
 - [x] Face Only / Body Only / Hybrid mode control and live bridge status
 - [ ] 3D viewer
-- [ ] record/playback/session browser
+- [x] fused take recording and CSV take reader core
+- [ ] Studio playback controls / session browser
 
 ## M6 — Production hardening
 - [ ] shared-memory frame transport

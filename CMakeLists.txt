@@ -24,6 +24,9 @@ add_library(bdfrpc_core
     src/SolverAdapters.cpp
     src/SourceHealth.cpp
     src/TakeRecorder.cpp
+    src/TakeReader.cpp
+    src/Skeleton.cpp
+    src/Retarget.cpp
     src/BDFRFacialUdpSource.cpp
     src/EasyMocapTcpSource.cpp
 )
