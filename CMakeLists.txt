@@ -33,6 +33,7 @@ add_library(bdfrpc_core
     src/Kinematics.cpp
     src/BvhExport.cpp
     src/BDFRFacialUdpSource.cpp
+    src/UnrealFacialUdpSender.cpp
     src/EasyMocapTcpSource.cpp
 )
 

@@ -4,6 +4,7 @@
 
 #include "bdfrpc/AdapterProtocol.h"
 #include "bdfrpc/BDFRFacialUdpSource.h"
+#include "bdfrpc/UnrealFacialUdpSender.h"
 #include "bdfrpc/Calibration.h"
 #include "bdfrpc/ClockSync.h"
 #include "bdfrpc/DeviceDiscovery.h"
@@ -236,6 +237,76 @@ int main() {
         assert(out.selected_sources[1] == "easymocap");
         assert(out.samples[0].values[0] == 11.0f);
         assert(out.samples[1].values[0] == 33.0f);
+    }
+
+    {
+        FusedPerformanceFrame fused;
+        fused.timestamp_ns = 1'750'000'000;
+
+        DomainSample face;
+        face.domain = Domain::Face;
+        face.confidence = 0.94f;
+        face.channels = {
+            "jawOpen",
+            "eyeBlinkLeft",
+            "gazeX",
+            "gazeY",
+            "gazeConfidence"
+        };
+        face.values = {
+            0.61f,
+            0.32f,
+            0.10f,
+            -0.20f,
+            0.88f
+        };
+
+        DomainSample head;
+        head.domain = Domain::Head;
+        head.confidence = 0.90f;
+        head.channels = {"pitch", "yaw", "roll"};
+        head.values = {1.0f, 2.0f, 3.0f};
+
+        fused.samples = {face, head};
+        fused.selected_sources = {
+            "bdfr_facial",
+            "bdfr_facial"
+        };
+
+        const auto packet =
+            encode_unreal_facial_packet(
+                fused,
+                {"performance_test", 99, 1});
+        assert(!packet.empty());
+
+        CaptureFrame decoded;
+        std::uint64_t sequence = 0;
+        std::string source;
+        assert(
+            BDFRFacialPacketCodec::decode(
+                packet,
+                "unreal_roundtrip",
+                decoded,
+                &sequence,
+                &source));
+
+        assert(sequence == 99);
+        assert(source == "performance_test");
+        assert(decoded.timestamp_ns == 1'750'000'000);
+        assert(decoded.samples.size() == 2);
+        assert(decoded.samples[0].domain == Domain::Face);
+        assert(decoded.samples[1].domain == Domain::Head);
+
+        const auto& decoded_face = decoded.samples[0];
+        assert(decoded_face.channels.size() == 5);
+        assert(decoded_face.channels[0] == "jawOpen");
+        assert(decoded_face.channels[1] == "eyeBlinkLeft");
+        assert(decoded_face.channels[2] == "gazeX");
+
+        const auto& decoded_head = decoded.samples[1];
+        assert(
+            std::abs(decoded_head.values[1] - 2.0f) <
+            1e-6f);
     }
 
     {
